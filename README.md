@@ -1,4 +1,4 @@
-Nombre del Proyecto: Envit.
+<p>Nombre del Proyecto: Envit. </p>
 Desarrolladores: Bellini Facundo, Colombo Francisco.
 Envit es un juego multijugador permite a dos jugadores enfrentarse en una partida de Truco en línea, pero con objetos que tendran grán influencia en la partida debido a sus efectos, que cambiarán la forma a la que se juega al truco convencionalmente. 
 La partida se desarrolla en tiempo real, sin límite de tiempo para cada jugada, lo que permite un ritmo más relajado y adaptable a los jugadores.
