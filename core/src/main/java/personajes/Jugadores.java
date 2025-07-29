@@ -1,4 +1,4 @@
-package src.personajes;
+package personajes;
 
 public abstract class Jugadores {
 	private Jugadores jugadores;

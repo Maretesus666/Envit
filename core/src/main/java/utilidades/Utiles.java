@@ -1,4 +1,4 @@
-package src.utilidades;
+package utilidades;
 
 import java.util.InputMismatchException;
 import java.util.Random;

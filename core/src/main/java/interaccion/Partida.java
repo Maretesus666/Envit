@@ -1,4 +1,4 @@
-package src.interaccion;
+package interaccion;
 
 import personajes.Jugador1;
 import personajes.Jugador2; 

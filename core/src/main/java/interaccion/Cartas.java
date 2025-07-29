@@ -1,4 +1,4 @@
-package src.interaccion;
+package interaccion;
 
 public class Cartas {
 

@@ -1,5 +1,3 @@
-package src;
-
 import interaccion.Partida;
 import personajes.Jugador1;
 import personajes.Jugador2;

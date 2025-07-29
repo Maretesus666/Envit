@@ -1,4 +1,4 @@
-package src.personajes;
+package personajes;
 
 public class Jugador2 extends Jugadores{
 
