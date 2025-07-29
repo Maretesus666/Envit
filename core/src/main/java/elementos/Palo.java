@@ -5,4 +5,8 @@ public enum Palo {
 
     private String nombre;
     Palo(String nombre) {}
+
+    public String getNombre() {
+        return nombre;
+    }
 }

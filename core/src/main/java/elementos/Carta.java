@@ -16,6 +16,6 @@ public abstract class Carta {
         return jerarquia;
     }
     public String getNombre() {
-        return valor + " de " + palo;
+        return valor + " de " + palo.getNombre();
     }
 }
