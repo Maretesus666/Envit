@@ -2,6 +2,6 @@ package elementos;
 
 public class OnceEspada extends Carta{
     OnceEspada(){
-        super(20,11, Palo.ESPADAS, 6 );
+        super(11, Palo.ESPADAS, 6 );
     }
 }
