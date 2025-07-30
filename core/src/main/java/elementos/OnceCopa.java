@@ -2,7 +2,7 @@ package elementos;
 
 public class OnceCopa extends Carta{
     OnceCopa() {
-        super(11, Palo.COPAS, 6 );
+        super(21,11, Palo.COPAS, 6 );
     }
 
 }

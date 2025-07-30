@@ -2,6 +2,6 @@ package elementos;
 
 public class SeisBasto extends Carta{
     SeisBasto(){
-        super(6, Palo.BASTO, 3 );
+        super(12,6, Palo.BASTO, 3 );
     }
 }

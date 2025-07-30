@@ -2,6 +2,6 @@ package elementos;
 
 public class DiezEspada extends Carta {
     DiezEspada(){
-        super(10, Palo.ESPADAS, 5);
+        super(16,10, Palo.ESPADAS, 5);
     }
 }
