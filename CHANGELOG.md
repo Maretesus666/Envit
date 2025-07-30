@@ -3,6 +3,11 @@
 Todos los cambios relevantes de este proyecto se documentarán aquí.  
 
 ---
+## [0.1.3] - 2025-07-30
+### Added
+- Se agregó la clase partida 
+- Se implementó la logica de reparto de cartas
+
 ## [0.1.2] - 2025-07-29
 ### Added
 - Se crearon las clases para cartas
