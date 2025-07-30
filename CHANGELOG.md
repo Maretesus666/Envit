@@ -3,6 +3,13 @@
 Todos los cambios relevantes de este proyecto se documentarán aquí.  
 
 ---
+## [0.1.2] - 2025-07-29
+### Added
+- Se crearon las clases para cartas
+- Se comenzó a desarrollar el menu principal
+### Fixed
+- Se borraron las clases jugadores, jugador1 y jugador2
+- Se organizó de mejor forma la estructura de las clases
 
 ## [0.1.1] - 2025-07-06
 
