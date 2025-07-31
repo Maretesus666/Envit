@@ -1,7 +1,7 @@
 package elementos;
 
 public class SeisOro extends Carta{
-    SeisOro(){
+    public SeisOro(){
         super(6, Palo.ORO, 3 );
     }
 }

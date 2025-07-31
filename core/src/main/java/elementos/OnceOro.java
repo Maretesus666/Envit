@@ -1,7 +1,7 @@
 package elementos;
 
 public class OnceOro extends Carta{
-    OnceOro() {
+    public OnceOro() {
         super(11, Palo.ORO, 6 );
     }
 }

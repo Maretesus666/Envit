@@ -1,7 +1,7 @@
 package elementos;
 
 public class SieteCopa extends Carta{
-    SieteCopa(){
+    public SieteCopa(){
         super(7, Palo.COPAS, 4 );
     }
 }

@@ -1,7 +1,7 @@
 package elementos;
 
 public class CuatroCopa extends Carta {
-    CuatroCopa() {
+    public CuatroCopa() {
         super(4, Palo.COPAS, 1 );
     }
 }

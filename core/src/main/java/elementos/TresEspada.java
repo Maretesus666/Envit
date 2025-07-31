@@ -1,7 +1,7 @@
 package elementos;
 
 public class TresEspada extends Carta{
-    TresEspada(){
+    public TresEspada(){
         super(3, Palo.ESPADAS, 10 );
     }
 }

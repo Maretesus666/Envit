@@ -1,7 +1,7 @@
 package elementos;
 
 public class SeisEspada extends Carta{
-    SeisEspada(){
+    public SeisEspada(){
         super(6, Palo.ESPADAS, 3 );
     }
 }

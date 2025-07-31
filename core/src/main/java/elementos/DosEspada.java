@@ -1,7 +1,7 @@
 package elementos;
 
 public class DosEspada extends Carta{
-    DosEspada() {
+    public DosEspada() {
         super(2, Palo.ESPADAS, 9 );
     }
 }

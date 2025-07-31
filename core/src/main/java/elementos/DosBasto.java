@@ -1,7 +1,7 @@
 package elementos;
 
 public class DosBasto extends Carta{
-    DosBasto() {
+    public DosBasto() {
         super(2, Palo.BASTO, 9 );
     }
 }
