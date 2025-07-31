@@ -4,17 +4,33 @@ import elementos.*;
 import personajes.Jugador;
 import utilidades.Aleatorio;
 
+import java.util.ArrayList;
+
 public class Partida {
-    private Jugador jugador1;
-    private Jugador jugador2;
+    private ArrayList<Carta> cartasRepartidas = new ArrayList<>();
 
 
-    public void repartirCartas() {
+    public void jugarRonda(Jugador jugador1, Jugador jugador2){
+     repartirCartas(jugador1,jugador2);
+     finalizarRonda(jugador1,jugador2);
+    }
+
+    public void finalizarRonda(Jugador jugador1, Jugador jugador2){
+        cartasRepartidas.clear();
+        jugador1.limpiarMazo();
+        jugador2.limpiarMazo();
+    }
+
+
+
+    public void repartirCartas(Jugador jugador1, Jugador jugador2) {
         for (int i = 0; i < 3; i++) {
             repartirUnaCartaA(jugador1);
             repartirUnaCartaA(jugador2);
         }
     }
+
+
     private void repartirUnaCartaA(Jugador jugador) {
         Carta cartaElegida;
         boolean existe;
@@ -25,20 +41,11 @@ public class Partida {
         } while (existe);
 
         jugador.agregarCarta(cartaElegida);
+        cartasRepartidas.add(cartaElegida);
     }
 
     public boolean verificarExistenciaCarta(Carta carta){
-        int i = 0;
-        boolean encontrado = false;
-        while(!encontrado){
-            if(jugador1.getMano()[i] == carta){
-                encontrado = true;
-            } else if (jugador2.getMano()[i] == carta) {
-                encontrado = true;
-            }
-            i++;
-        }
-        return encontrado;
+        return cartasRepartidas.contains(carta);
     }
 
     public Carta sacarCarta(){

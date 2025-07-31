@@ -1,4 +1,4 @@
-import interaccion.Partida;
+
 
 public class Principal {
 
