@@ -1,1 +1,5 @@
+fondos/fondo.png
+fondos/pepi.png
+fuentes/dungeon.ttf
+fuentes/medieval.ttf
 libgdx.png
