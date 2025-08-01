@@ -3,6 +3,12 @@
 Todos los cambios relevantes de este proyecto se documentarán aquí.  
 
 ---
+## [0.1.4] - 2025-08-01
+### Added
+- Se agregó la clase pantallaMenu
+- Se agregó la  carpeta de fondos y de fuentes en assets
+- Se implementó la logica de Menu, opciones, fuentes y efectos crt
+
 ## [0.1.3] - 2025-07-30
 ### Added
 - Se agregó la clase partida 
