@@ -3,6 +3,24 @@
 Todos los cambios relevantes de este proyecto se documentarán aquí.  
 
 ---
+## [0.1.4] - 2025-08-01
+### Added
+- Se agregó la clase pantallaMenu
+- Se agregó la  carpeta de fondos y de fuentes en assets
+- Se implementó la logica de Menu, opciones, fuentes y efectos crt
+
+## [0.1.3] - 2025-07-30
+### Added
+- Se agregó la clase partida 
+- Se implementó la logica de reparto de cartas
+
+## [0.1.2] - 2025-07-29
+### Added
+- Se crearon las clases para cartas
+- Se comenzó a desarrollar el menu principal
+### Fixed
+- Se borraron las clases jugadores, jugador1 y jugador2
+- Se organizó de mejor forma la estructura de las clases
 
 ## [0.1.1] - 2025-07-06
 
