@@ -1,4 +1,5 @@
 fondos/fondo.png
+fondos/fondoOpciones.png
 fondos/pepi.png
 fuentes/dungeon.ttf
 fuentes/medieval.ttf

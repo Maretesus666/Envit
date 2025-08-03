@@ -16,15 +16,13 @@ public class PantallaMenu extends JFrame {
     private float scanlineOffset = 0;
     private float crtFlicker = 0;
     private Font font;
-    private boolean examplesEnabled = true;
-    // Añadir variables para controlar los efectos
     private boolean crtEnabled = true;
     private boolean flickerEnabled = true;
     private boolean shakeEnabled = true;
     
     // Variables para el modo opciones
     private boolean inOptionsMode = false;
-    private JCheckBox examplesCheckBox, crtCheckBox, flickerCheckBox, shakeCheckBox;
+    private JCheckBox  crtCheckBox, flickerCheckBox, shakeCheckBox;
     private MenuButton closeButton;
     private BufferedImage optionsBackgroundImage;
 
@@ -38,7 +36,7 @@ public class PantallaMenu extends JFrame {
     }
 
     private void initializeFrame() {
-        setTitle("Menú del Juego Retro");
+        setTitle("Envit");
         setSize(1200, 750);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -116,23 +114,19 @@ public class PantallaMenu extends JFrame {
         mainPanel.add(optionsTitle);
         
         // Checkboxes
-        examplesCheckBox = createCustomCheckBox("Activar ejemplos", examplesEnabled);
-        examplesCheckBox.setBounds(500, 180, 200, 30);
-        examplesCheckBox.setVisible(false);
-        mainPanel.add(examplesCheckBox);
-        
+
         crtCheckBox = createCustomCheckBox("Activar efectos CRT", crtEnabled);
-        crtCheckBox.setBounds(500, 220, 200, 30);
+        crtCheckBox.setBounds(500, 220, 220, 40);
         crtCheckBox.setVisible(false);
         mainPanel.add(crtCheckBox);
         
         flickerCheckBox = createCustomCheckBox("Activar destellos", flickerEnabled);
-        flickerCheckBox.setBounds(500, 260, 200, 30);
+        flickerCheckBox.setBounds(500, 260, 220, 40);
         flickerCheckBox.setVisible(false);
         mainPanel.add(flickerCheckBox);
         
         shakeCheckBox = createCustomCheckBox("Activar temblor", shakeEnabled);
-        shakeCheckBox.setBounds(500, 300, 200, 30);
+        shakeCheckBox.setBounds(500, 300, 220, 40);
         shakeCheckBox.setVisible(false);
         mainPanel.add(shakeCheckBox);
         
@@ -144,7 +138,7 @@ public class PantallaMenu extends JFrame {
         
         // Cargar imagen de fondo para opciones
         try {
-            File imageFile = new File("assets/fondos/pepi.png");
+            File imageFile = new File("assets/fondos/fondoOpciones.png");
             if (imageFile.exists()) {
                 optionsBackgroundImage = ImageIO.read(imageFile);
             }
@@ -182,11 +176,11 @@ public class PantallaMenu extends JFrame {
         exitButton.setVisible(!inOptionsMode);
         
         // Mostrar/ocultar elementos de opciones
-        Component[] components = getContentPane().getComponent(0).getComponents();
+        Component[] components = ((Container) getContentPane().getComponent(0)).getComponents();
         for (Component component : components) {
             if (component instanceof JLabel && ((JLabel) component).getText().equals("Envit")) {
                 component.setVisible(inOptionsMode);
-            } else if (component == examplesCheckBox || 
+            } else if (
                       component == crtCheckBox || 
                       component == flickerCheckBox || 
                       component == shakeCheckBox || 
@@ -197,13 +191,11 @@ public class PantallaMenu extends JFrame {
         
         // Actualizar estado de los checkboxes
         if (inOptionsMode) {
-            examplesCheckBox.setSelected(examplesEnabled);
-            crtCheckBox.setSelected(crtEnabled);
+             crtCheckBox.setSelected(crtEnabled);
             flickerCheckBox.setSelected(flickerEnabled);
             shakeCheckBox.setSelected(shakeEnabled);
         } else {
             // Guardar preferencias cuando se sale del modo opciones
-            examplesEnabled = examplesCheckBox.isSelected();
             crtEnabled = crtCheckBox.isSelected();
             flickerEnabled = flickerCheckBox.isSelected();
             shakeEnabled = shakeCheckBox.isSelected();
@@ -325,7 +317,6 @@ public class PantallaMenu extends JFrame {
                 
                 // Repintar elementos de opciones si están visibles
                 if (inOptionsMode) {
-                    examplesCheckBox.repaint();
                     crtCheckBox.repaint();
                     flickerCheckBox.repaint();
                     shakeCheckBox.repaint();
@@ -357,16 +348,6 @@ public class PantallaMenu extends JFrame {
             }
         }
 
-        // Efecto de curvatura en los bordes (vignette)
-        GradientPaint vignette = new GradientPaint(
-                width/2, height/2, new Color(0, 0, 0, 0),
-                0, 0, new Color(0, 0, 0, 120)
-        );
-        g2d.setPaint(vignette);
-        g2d.fillRect(0, 0, 30, height);
-        g2d.fillRect(width - 30, 0, 30, height);
-        g2d.fillRect(0, 0, width, 20);
-        g2d.fillRect(0, height - 20, width, 20);
 
         // Efecto de brillo/resplandor con flicker (solo si está habilitado)
         if (flickerEnabled) {
@@ -474,6 +455,21 @@ public class PantallaMenu extends JFrame {
         checkBox.setOpaque(false);
         checkBox.setForeground(Color.CYAN);
         checkBox.setFocusPainted(false);
+        
+        // Añadir listener para actualizar las preferencias en tiempo real
+        checkBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // Actualizar preferencias inmediatamente cuando se cambia una opción
+                if (checkBox == crtCheckBox) {
+                    crtEnabled = checkBox.isSelected();
+                } else if (checkBox == flickerCheckBox) {
+                    flickerEnabled = checkBox.isSelected();
+                } else if (checkBox == shakeCheckBox) {
+                    shakeEnabled = checkBox.isSelected();
+                }
+            }
+        });
         
         return checkBox;
     }
