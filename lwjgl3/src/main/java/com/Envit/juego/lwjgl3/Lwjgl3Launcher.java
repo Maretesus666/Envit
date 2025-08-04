@@ -2,7 +2,7 @@ package com.Envit.juego.lwjgl3;
 
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
-import com.Envit.juego.Principal;
+import com.Envit.Juego.Principal;
 
 /** Launches the desktop (LWJGL3) application. */
 public class Lwjgl3Launcher {

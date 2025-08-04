@@ -1,654 +1,437 @@
 package com.Envit.Juego.pantallas;
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.*;
-import java.awt.image.BufferedImage;
-import java.io.File;
 
-import java.io.IOException;
-import javax.imageio.ImageIO;
+import com.Envit.Juego.Principal;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.graphics.*;
+import com.badlogic.gdx.graphics.g2d.*;
+import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.Rectangle;
+
 import java.util.Random;
 
-public class PantallaMenu extends JFrame {
-    private BufferedImage backgroundImage;
-    private MenuButton playButton, optionsButton, exitButton;
-    private Timer crtTimer;
-    private Random random = new Random();
-    private float scanlineOffset = 0;
-    private float crtFlicker = 0;
-    private Font font;
+public class PantallaMenu implements Screen {
+
+    private final Principal game;
+
+    private SpriteBatch batch;
+    private ShapeRenderer shapeRenderer;
+    private BitmapFont font;
+
+    private Texture backgroundTexture;
+    private Texture optionsBackgroundTexture;
+
+    private boolean inOptionsMode = false;
+
+    // Efectos CRT
     private boolean crtEnabled = true;
     private boolean flickerEnabled = true;
-    private boolean shakeEnabled = true; // Se agregó el punto y coma faltante
+    private boolean shakeEnabled = true;
 
-    // Variables para el modo opciones
-    private boolean inOptionsMode = false;
-    private JCheckBox  crtCheckBox, flickerCheckBox, shakeCheckBox;
-    private MenuButton closeButton;
-    private BufferedImage optionsBackgroundImage;
+    private float scanlineOffset = 0f;
+    private float crtFlicker = 0f;
 
-    public PantallaMenu() {
-        loadCustomFont();
-        initializeFrame();
-        loadBackgroundImage();
-        createButtons();
-        setupCRTEffect();
-        setVisible(true);
+    private Random random = new Random();
+
+    // UI
+    // Eliminados: TextButton, CheckBox, Label, Skin
+    // En su lugar, usaremos tus propios assets y lógica manual
+
+    // Ejemplo de posiciones para tus botones
+    private Rectangle btnPlayRect = new Rectangle();
+    private Rectangle btnOptionsRect = new Rectangle();
+    private Rectangle btnExitRect = new Rectangle();
+    private Rectangle btnCloseOptionsRect = new Rectangle();
+    private Rectangle chkCRTBox = new Rectangle();
+    private Rectangle chkFlickerBox = new Rectangle();
+    private Rectangle chkShakeBox = new Rectangle();
+
+    // Texturas para tus botones (deberás poner los nombres correctos de tus archivos)
+    private Texture btnPlayTexture, btnOptionsTexture, btnExitTexture, btnCloseOptionsTexture;
+    private Texture chkCheckedTexture, chkUncheckedTexture;
+    private Texture titleTexture;
+
+    public PantallaMenu(final Principal game) {
+        this.game = game;
+
+        batch = new SpriteBatch();
+        shapeRenderer = new ShapeRenderer();
+
+        // Stage eliminado, ya no se usa Scene2D
+        // Cargar tus texturas personalizadas
+        loadFont();
+        loadBackgrounds();
+        loadButtonTextures();
+        setButtonRects();
     }
 
-    private void initializeFrame() {
-        setTitle("Envit");
-        setSize(1200, 750);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
-        setResizable(false);
-
-        // Panel principal con override de paintComponent para efectos CRT
-        JPanel mainPanel = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2d = (Graphics2D) g.create();
-
-                // Dibujar fondo
-                if (backgroundImage != null && !inOptionsMode) {
-                    g2d.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), null);
-                } else if (inOptionsMode && optionsBackgroundImage != null) {
-                    g2d.drawImage(optionsBackgroundImage, 0, 0, getWidth(), getHeight(), null);
-                } else if (inOptionsMode) {
-                    // Fondo procedural para opciones
-                    createProceduralOptionsBackground(g2d);
-                }
-
-                // Aplicar efecto CRT al fondo
-                applyCRTEffect(g2d);
-
-                g2d.dispose();
-            }
-        };
-
-        mainPanel.setLayout(null);
-        add(mainPanel);
-
-        // Agregar botones al panel
-        playButton = new MenuButton("JUGAR", 300, 200);
-        optionsButton = new MenuButton("OPCIONES", 300, 280);
-        exitButton = new MenuButton("SALIR", 300, 360);
-
-        mainPanel.add(playButton);
-        mainPanel.add(optionsButton);
-        mainPanel.add(exitButton);
-
-        // Agregar listeners
-        playButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                startGame();
-            }
-        });
-
-        optionsButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                toggleOptions();
-            }
-        });
-
-        exitButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                System.exit(0);
-            }
-        });
-
-        // Crear elementos de la pantalla de opciones (inicialmente ocultos)
-        createOptionsElements(mainPanel);
-    }
-
-    private void createOptionsElements(JPanel mainPanel) {
-        // Título de opciones
-        JLabel optionsTitle = new JLabel("Envit");
-        optionsTitle.setFont(font.deriveFont(64f));
-        optionsTitle.setForeground(Color.CYAN);
-        optionsTitle.setBounds(500, 100, 240, 50);
-        optionsTitle.setVisible(false);
-        mainPanel.add(optionsTitle);
-
-        // Checkboxes
-
-        crtCheckBox = createCustomCheckBox("Efectos CRT", crtEnabled);
-        crtCheckBox.setBounds(500, 220, 240, 40);
-        crtCheckBox.setFont(font.deriveFont(24f));
-        crtCheckBox.setVisible(false);
-        mainPanel.add(crtCheckBox);
-
-        flickerCheckBox = createCustomCheckBox("Destellos", flickerEnabled);
-        flickerCheckBox.setBounds(500, 260, 240, 40);
-        flickerCheckBox.setFont(font.deriveFont(24f));
-        flickerCheckBox.setVisible(false);
-        mainPanel.add(flickerCheckBox);
-
-        shakeCheckBox = createCustomCheckBox("Temblor", shakeEnabled);
-        shakeCheckBox.setBounds(500, 300, 240, 40);
-        shakeCheckBox.setFont(font.deriveFont(24f));
-        shakeCheckBox.setVisible(false);
-        mainPanel.add(shakeCheckBox);
-
-        // Botón de cerrar
-        closeButton = new MenuButton("CERRAR", 500, 360);
-        closeButton.setVisible(false);
-        closeButton.addActionListener(e -> toggleOptions());
-        mainPanel.add(closeButton);
-
-        // Cargar imagen de fondo para opciones
+    private void loadFont() {
         try {
-            File imageFile = new File("assets/fondos/fondoOpciones.png");
-            if (imageFile.exists()) {
-                optionsBackgroundImage = ImageIO.read(imageFile);
-            }
-        } catch (IOException e) {
-            // Si no se puede cargar, se usará el fondo procedural
+            // Quitar "assets/" de la ruta, solo poner la ruta relativa desde assets
+            FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("fuentes/medieval.ttf"));
+            FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+            parameter.size = 36;
+            font = generator.generateFont(parameter);
+            generator.dispose();
+        } catch (Exception e) {
+            font = new BitmapFont(); // fallback default
+            Gdx.app.log("PantallaMenu", "No se pudo cargar la fuente medieval.ttf, usando fuente por defecto");
         }
     }
 
-    private void createProceduralOptionsBackground(Graphics2D g2d) {
-        int width = getWidth();
-        int height = getHeight();
+    private void loadBackgrounds() {
+        // Quitar "assets/" de la ruta, solo poner la ruta relativa desde assets
+        if (Gdx.files.internal("fondos/fondo.png").exists()) {
+            backgroundTexture = new Texture(Gdx.files.internal("fondos/fondo.png"));
+            Gdx.app.log("PantallaMenu", "Fondo principal cargado correctamente");
+        } else {
+            backgroundTexture = null;
+            Gdx.app.error("PantallaMenu", "No se encontró fondos/fondo.png, usando fondo procedural");
+        }
+        if (Gdx.files.internal("fondos/fondoOpciones.png").exists()) {
+            optionsBackgroundTexture = new Texture(Gdx.files.internal("fondos/fondoOpciones.png"));
+            Gdx.app.log("PantallaMenu", "Fondo de opciones cargado correctamente");
+        } else {
+            optionsBackgroundTexture = null;
+            Gdx.app.error("PantallaMenu", "No se encontró fondos/fondoOpciones.png, usando fondo procedural para opciones");
+        }
+    }
 
-        // Gradiente de fondo para opciones
-        GradientPaint gradient1 = new GradientPaint(
-                0, 0, new Color(10, 10, 30),
-                width/2, height/2, new Color(40, 10, 60)
-        );
-        g2d.setPaint(gradient1);
-        g2d.fillRect(0, 0, width, height);
+    private void loadButtonTextures() {
+        // Cambia los nombres por los de tus archivos reales
+        btnPlayTexture = tryLoadTexture("sprites/btn_jugar.png");
+        btnOptionsTexture = tryLoadTexture("sprites/btn_opciones.png");
+        btnExitTexture = tryLoadTexture("sprites/btn_salir.png");
+        btnCloseOptionsTexture = tryLoadTexture("sprites/btn_cerrar.png");
+        chkCheckedTexture = tryLoadTexture("sprites/chk_on.png");
+        chkUncheckedTexture = tryLoadTexture("sprites/chk_off.png");
+        titleTexture = tryLoadTexture("sprites/titulo.png");
+    }
 
-        GradientPaint gradient2 = new GradientPaint(
-                width, 0, new Color(60, 20, 80, 100),
-                0, height, new Color(20, 40, 100, 100)
-        );
-        g2d.setPaint(gradient2);
-        g2d.fillRect(0, 0, width, height);
+    private Texture tryLoadTexture(String path) {
+        if (Gdx.files.internal(path).exists()) {
+            return new Texture(Gdx.files.internal(path));
+        } else {
+            Gdx.app.error("PantallaMenu", "No se encontró: " + path);
+            return null;
+        }
+    }
+
+    private void setButtonRects() {
+        int w = Gdx.graphics.getWidth();
+        int h = Gdx.graphics.getHeight();
+        float btnW = 200, btnH = 50;
+        float centerX = w / 2f - btnW / 2f;
+        btnPlayRect.set(centerX, 400, btnW, btnH);
+        btnOptionsRect.set(centerX, 320, btnW, btnH);
+        btnExitRect.set(centerX, 240, btnW, btnH);
+        btnCloseOptionsRect.set(centerX, 180, btnW, btnH);
+        // Checkboxes
+        float chkW = 32, chkH = 32;
+        float chkX = w / 2f - 100;
+        chkCRTBox.set(chkX, 320, chkW, chkH);
+        chkFlickerBox.set(chkX, 280, chkW, chkH);
+        chkShakeBox.set(chkX, 240, chkW, chkH);
+    }
+
+    @Override
+    public void resize(int width, int height) {
+        setButtonRects();
+    }
+
+    @Override
+    public void render(float delta) {
+        // Actualizar lógica efectos CRT
+        if (crtEnabled) {
+            scanlineOffset += 60 * delta * 0.5f;
+            if (scanlineOffset > 4) scanlineOffset = 0;
+        }
+
+        if (flickerEnabled) {
+            crtFlicker += 60 * delta * 0.1f;
+            if (crtFlicker > Math.PI * 2) crtFlicker = 0;
+        }
+
+        // Limpiar pantalla
+        Gdx.gl.glClearColor(0, 0, 0, 1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+        batch.begin();
+
+        // Dibujar fondo (según modo)
+        if (!inOptionsMode) {
+            if (backgroundTexture != null) {
+                batch.draw(backgroundTexture, 0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+            } else {
+                drawProceduralBackground(batch);
+            }
+        } else {
+            if (optionsBackgroundTexture != null) {
+                batch.draw(optionsBackgroundTexture, 0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+            } else {
+                drawProceduralOptionsBackground(batch);
+            }
+        }
+
+        // Dibuja el título
+        if (titleTexture != null) {
+            batch.draw(titleTexture, Gdx.graphics.getWidth()/2f - titleTexture.getWidth()/2f, Gdx.graphics.getHeight() - 120);
+        } else if (font != null) {
+            font.setColor(Color.CYAN);
+            font.getData().setScale(2f);
+            font.draw(batch, "Envit", Gdx.graphics.getWidth()/2f - 80, Gdx.graphics.getHeight() - 80);
+        }
+
+        // Dibuja los botones principales
+        if (!inOptionsMode) {
+            drawButton(batch, btnPlayTexture, btnPlayRect, "JUGAR");
+            drawButton(batch, btnOptionsTexture, btnOptionsRect, "OPCIONES");
+            drawButton(batch, btnExitTexture, btnExitRect, "SALIR");
+        } else {
+            drawButton(batch, btnCloseOptionsTexture, btnCloseOptionsRect, "CERRAR");
+            // Checkboxes
+            drawCheckbox(batch, chkCRTBox, crtEnabled, "Efectos CRT");
+            drawCheckbox(batch, chkFlickerBox, flickerEnabled, "Destellos");
+            drawCheckbox(batch, chkShakeBox, shakeEnabled, "Temblor");
+        }
+        batch.end();
+
+        // Dibujar efecto CRT
+        if (crtEnabled) {
+            drawCRTEffect();
+        }
+
+        // Manejo de input manual para botones y checkboxes
+        handleInput();
+    }
+
+    private void drawButton(SpriteBatch batch, Texture texture, Rectangle rect, String texto) {
+        boolean hovered = rect.contains(Gdx.input.getX(), Gdx.graphics.getHeight() - Gdx.input.getY());
+        if (texture != null) {
+            batch.setColor(hovered ? Color.CYAN : Color.WHITE);
+            batch.draw(texture, rect.x, rect.y, rect.width, rect.height);
+            batch.setColor(Color.WHITE);
+        } else if (font != null) {
+            // Fondo simple para el botón
+            batch.setColor(hovered ? new Color(0,1,1,0.5f) : new Color(0,0,0,0.5f));
+            batch.draw(getWhitePixel(), rect.x, rect.y, rect.width, rect.height);
+            batch.setColor(Color.WHITE);
+            font.setColor(hovered ? Color.CYAN : Color.WHITE);
+            font.getData().setScale(1.2f);
+            font.draw(batch, texto, rect.x + rect.width/2 - 50, rect.y + rect.height/2 + 15);
+        }
+    }
+
+    private void drawCheckbox(SpriteBatch batch, Rectangle rect, boolean checked, String label) {
+        boolean hovered = rect.contains(Gdx.input.getX(), Gdx.graphics.getHeight() - Gdx.input.getY());
+        Texture tex = checked ? chkCheckedTexture : chkUncheckedTexture;
+        if (tex != null) {
+            batch.setColor(hovered ? Color.CYAN : Color.WHITE);
+            batch.draw(tex, rect.x, rect.y, rect.width, rect.height);
+            batch.setColor(Color.WHITE);
+        } else {
+            batch.setColor(hovered ? new Color(0,1,1,0.5f) : new Color(0,0,0,0.5f));
+            batch.draw(getWhitePixel(), rect.x, rect.y, rect.width, rect.height);
+            batch.setColor(Color.WHITE);
+        }
+        if (font != null) {
+            font.setColor(hovered ? Color.CYAN : Color.WHITE);
+            font.getData().setScale(1f);
+            font.draw(batch, label, rect.x + rect.width + 8, rect.y + rect.height - 8);
+        }
+    }
+
+    private void handleInput() {
+        if (Gdx.input.justTouched()) {
+            float x = Gdx.input.getX();
+            float y = Gdx.graphics.getHeight() - Gdx.input.getY();
+            if (!inOptionsMode) {
+                if (btnPlayRect.contains(x, y)) startGame();
+                else if (btnOptionsRect.contains(x, y)) toggleOptions();
+                else if (btnExitRect.contains(x, y)) Gdx.app.exit();
+            } else {
+                if (btnCloseOptionsRect.contains(x, y)) toggleOptions();
+                else if (chkCRTBox.contains(x, y)) crtEnabled = !crtEnabled;
+                else if (chkFlickerBox.contains(x, y)) flickerEnabled = !flickerEnabled;
+                else if (chkShakeBox.contains(x, y)) shakeEnabled = !shakeEnabled;
+            }
+        }
     }
 
     private void toggleOptions() {
         inOptionsMode = !inOptionsMode;
-
-        // Mostrar/ocultar elementos del menú principal
-        playButton.setVisible(!inOptionsMode);
-        optionsButton.setVisible(!inOptionsMode);
-        exitButton.setVisible(!inOptionsMode);
-
-        // Mostrar/ocultar elementos de opciones
-        Component[] components = ((Container) getContentPane().getComponent(0)).getComponents();
-        for (Component component : components) {
-            if (component instanceof JLabel && ((JLabel) component).getText().equals("Envit")) {
-                component.setVisible(inOptionsMode);
-            } else if (
-                    component == crtCheckBox ||
-                            component == flickerCheckBox ||
-                            component == shakeCheckBox ||
-                            component == closeButton) {
-                component.setVisible(inOptionsMode);
-            }
-        }
-
-        // Actualizar estado de los checkboxes
-        if (inOptionsMode) {
-            crtCheckBox.setSelected(crtEnabled);
-            flickerCheckBox.setSelected(flickerEnabled);
-            shakeCheckBox.setSelected(shakeEnabled);
-        } else {
-            // Guardar preferencias cuando se sale del modo opciones
-            crtEnabled = crtCheckBox.isSelected();
-            flickerEnabled = flickerCheckBox.isSelected();
-            shakeEnabled = shakeCheckBox.isSelected();
-        }
-
-        // Repintar la ventana
-        getContentPane().getComponent(0).repaint();
     }
 
-    private void loadCustomFont() {
-        try {
-            // Cargar la fuente personalizada
-            File fontFile = new File("assets/fuentes/medieval.ttf");
-            if (fontFile.exists()) {
-                font = Font.createFont(Font.TRUETYPE_FONT, fontFile).deriveFont(18f);
-                GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-                ge.registerFont(font);
-            } else {
-                System.out.println("No se encontró medieval.ttf, usando fuente por defecto");
-                font = new Font("Dialog", Font.BOLD, 18);
-            }
-        } catch (Exception e) {
-            System.err.println("Error cargando fuente personalizada: " + e.getMessage());
-            font = new Font("Dialog", Font.BOLD, 18);
-        }
+    private void startGame() {
+        // Aquí llamás para cambiar de pantalla a la partida (ejemplo)
+        // game.setScreen(new PantallaPartida(game));
+
+        // Por ahora mostramos mensaje y volvemos al menú
+        Gdx.app.log("PantallaMenu", "Iniciar partida - funcionalidad no implementada");
     }
 
-    private void loadBackgroundImage() {
-        try {
-            // Intentar cargar imagen desde archivo
-            // Puedes cambiar la ruta por la de tu imagen
-            File imageFile = new File("assets/fondos/fondo.png"); // o "background.png"
+    private void drawProceduralBackground(SpriteBatch batch) {
+        // Para algo simple, dibujamos un fondo con gradient manual (puede ser con ShapeRenderer si querés)
+        batch.end();
 
-            if (imageFile.exists()) {
-                backgroundImage = ImageIO.read(imageFile);
-                System.out.println("Imagen de fondo cargada: " + imageFile.getAbsolutePath());
-            } else {
-                // Si no existe el archivo, crear imagen procedural
-                System.out.println("No se encontró fondo.png, creando fondo procedural...");
-                createProceduralBackground();
-            }
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        int w = Gdx.graphics.getWidth();
+        int h = Gdx.graphics.getHeight();
 
-        } catch (IOException e) {
-            System.err.println("Error cargando imagen de fondo: " + e.getMessage());
-            createProceduralBackground();
-        }
-    }
+        // Gradient vertical manual simulando tu fondo original
+        shapeRenderer.rect(0, 0, w, h, new Color(0.04f, 0.04f, 0.12f,1), new Color(0.16f, 0.04f, 0.24f,1), new Color(0.24f, 0.08f, 0.39f,1), new Color(0.04f, 0.16f, 0.39f,1));
 
-    private void createProceduralBackground() {
-        // Crear una imagen de fondo procedural más elaborada
-        backgroundImage = new BufferedImage(800, 600, BufferedImage.TYPE_INT_RGB);
-        Graphics2D g2d = backgroundImage.createGraphics();
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-        // Gradiente de fondo más complejo
-        GradientPaint gradient1 = new GradientPaint(
-                0, 0, new Color(10, 10, 30),
-                400, 300, new Color(40, 10, 60)
-        );
-        g2d.setPaint(gradient1);
-        g2d.fillRect(0, 0, 800, 600);
-
-        GradientPaint gradient2 = new GradientPaint(
-                800, 0, new Color(60, 20, 80, 100),
-                0, 600, new Color(20, 40, 100, 100)
-        );
-        g2d.setPaint(gradient2);
-        g2d.fillRect(0, 0, 800, 600);
-
-        // Agregar elementos gráficos retro
-        g2d.setColor(new Color(0, 255, 255, 30));
+        // Elementos gráficos retro simples
         for (int i = 0; i < 15; i++) {
-            int x = random.nextInt(800);
-            int y = random.nextInt(600);
-            int size = random.nextInt(150) + 50;
-            g2d.drawOval(x, y, size, size);
+            float x = random.nextInt(w);
+            float y = random.nextInt(h);
+            float size = random.nextInt(150) + 50;
+            shapeRenderer.setColor(0, 1, 1, 0.12f);
+            shapeRenderer.circle(x, y, size);
         }
 
         // Líneas de circuito
-        g2d.setStroke(new BasicStroke(2));
-        g2d.setColor(new Color(255, 0, 255, 40));
+        shapeRenderer.setColor(1, 0, 1, 0.16f);
         for (int i = 0; i < 20; i++) {
-            int x1 = random.nextInt(800);
-            int y1 = random.nextInt(600);
-            int x2 = x1 + random.nextInt(200) - 100;
-            int y2 = y1 + random.nextInt(200) - 100;
-            g2d.drawLine(x1, y1, x2, y2);
+            float x1 = random.nextInt(w);
+            float y1 = random.nextInt(h);
+            float x2 = x1 + random.nextInt(200) - 100;
+            float y2 = y1 + random.nextInt(200) - 100;
+            shapeRenderer.rectLine(x1, y1, x2, y2, 2);
         }
 
-        g2d.dispose();
+        shapeRenderer.end();
+
+        batch.begin();
     }
 
-    private void createButtons() {
-        // Los botones ya se crean en initializeFrame()
+    private void drawProceduralOptionsBackground(SpriteBatch batch) {
+        batch.end();
+
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        int w = Gdx.graphics.getWidth();
+        int h = Gdx.graphics.getHeight();
+
+        // Gradientes para opciones (como en tu código)
+        // Parte 1
+        shapeRenderer.rect(0, 0, w / 2, h / 2, new Color(0.04f, 0.04f, 0.12f,1), new Color(0.16f, 0.04f, 0.24f,1), new Color(0.24f, 0.08f, 0.39f,1), new Color(0.04f, 0.16f, 0.39f,1));
+        // Parte 2
+        shapeRenderer.rect(w / 2, 0, w / 2, h, new Color(0.24f, 0.08f, 0.39f, 0.39f), new Color(0.08f, 0.16f, 0.39f, 0.39f), new Color(0.08f, 0.16f, 0.39f, 0.39f), new Color(0.24f, 0.08f, 0.39f, 0.39f));
+
+        shapeRenderer.end();
+
+        batch.begin();
     }
 
-    private void setupCRTEffect() {
-        crtTimer = new Timer(50, new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                // Solo actualizar efectos si están habilitados
-                if (crtEnabled) {
-                    scanlineOffset += 0.5f;
-                    if (scanlineOffset > 4) scanlineOffset = 0;
-                }
+    private void drawCRTEffect() {
+        // batch.end(); // QUITADO: ya está terminado antes de llamar a este método
 
-                // Solo actualizar flicker si está habilitado
-                if (flickerEnabled) {
-                    crtFlicker += 0.1f;
-                    if (crtFlicker > Math.PI * 2) crtFlicker = 0;
-                }
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
-                repaint();
+        int w = Gdx.graphics.getWidth();
+        int h = Gdx.graphics.getHeight();
 
-                // Repintar botones para aplicar efecto CRT
-                playButton.repaint();
-                optionsButton.repaint();
-                exitButton.repaint();
-
-                // Repintar elementos de opciones si están visibles
-                if (inOptionsMode) {
-                    crtCheckBox.repaint();
-                    flickerCheckBox.repaint();
-                    shakeCheckBox.repaint();
-                    closeButton.repaint();
-                }
-            }
-        });
-        crtTimer.start();
-    }
-
-    private void applyCRTEffect(Graphics2D g2d) {
-        // Solo aplicar efectos si están habilitados
-        if (!crtEnabled) return;
-
-        int width = getWidth();
-        int height = getHeight();
-
-        // Efecto de líneas de escaneo
-        g2d.setColor(new Color(0, 0, 0, 40));
-        for (int y = (int)scanlineOffset; y < height; y += 3) {
-            g2d.drawLine(0, y, width, y);
+        // Líneas de escaneo horizontales
+        shapeRenderer.setColor(0, 0, 0, 0.15f);
+        for (int y = (int) scanlineOffset; y < h; y += 3) {
+            shapeRenderer.rect(0, y, w, 1);
         }
 
-        // Líneas de escaneo verticales ocasionales
+        // Líneas verticales ocasionales
         if (random.nextInt(50) < 2) {
-            g2d.setColor(new Color(0, 0, 0, 20));
-            for (int x = 0; x < width; x += 2) {
-                g2d.drawLine(x, 0, x, height);
+            shapeRenderer.setColor(0, 0, 0, 0.08f);
+            for (int x = 0; x < w; x += 2) {
+                shapeRenderer.rect(x, 0, 1, h);
             }
         }
 
+        shapeRenderer.end();
 
-        // Efecto de brillo/resplandor con flicker (solo si está habilitado)
-        if (flickerEnabled) {
-            float flickerIntensity = (float)(Math.sin(crtFlicker) * 0.5 + 0.5);
-            if (random.nextInt(100) < 8) {
-                g2d.setColor(new Color(255, 255, 255, (int)(15 * flickerIntensity)));
-                g2d.fillRect(0, 0, width, height);
-            }
+        // batch.begin(); // QUITADO: el control de batch está en render()
+
+        // Flicker
+        if (flickerEnabled && random.nextInt(100) < 8) {
+            batch.begin();
+            Color flickerColor = new Color(1,1,1, 0.06f + 0.1f * (float)Math.sin(crtFlicker));
+            batch.setColor(flickerColor);
+            batch.draw(getWhitePixel(), 0, 0, w, h);
+            batch.setColor(Color.WHITE);
+            batch.end();
         }
 
         // Ruido estático
         if (random.nextInt(150) < 3) {
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
             for (int i = 0; i < 80; i++) {
-                int x = random.nextInt(width);
-                int y = random.nextInt(height);
-                int intensity = random.nextInt(150);
-                g2d.setColor(new Color(intensity, intensity, intensity, random.nextInt(100)));
-                g2d.fillRect(x, y, 2, 2);
+                float x = random.nextInt(w);
+                float y = random.nextInt(h);
+                float alpha = random.nextFloat() * 0.3f;
+                shapeRenderer.setColor(1, 1, 1, alpha);
+                shapeRenderer.rect(x, y, 2, 2);
             }
+            shapeRenderer.end();
         }
 
-        // Distorsión horizontal ocasional (solo si está habilitado)
+        // Distorsión horizontal ocasional (temblor)
         if (shakeEnabled && random.nextInt(300) < 2) {
-            int distortY = random.nextInt(height);
-            g2d.setColor(new Color(255, 255, 255, 30));
-            g2d.fillRect(0, distortY, width, 3);
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            int distortY = random.nextInt(h);
+            shapeRenderer.setColor(1, 1, 1, 0.12f);
+            shapeRenderer.rect(0, distortY, w, 3);
+            shapeRenderer.end();
         }
     }
 
-    // Método público para aplicar CRT a los botones
-    public void applyCRTToButton(Graphics2D g2d, int width, int height) {
-        // Solo aplicar efectos si están habilitados
-        if (!crtEnabled) return;
+    // Textura 1x1 blanca para dibujar rectángulos simples
+    private Texture whitePixel;
 
-        // Líneas de escaneo para botones
-        g2d.setColor(new Color(0, 0, 0, 60));
-        for (int y = (int)scanlineOffset; y < height; y += 3) {
-            g2d.drawLine(0, y, width, y);
+    private Texture getWhitePixel() {
+        if (whitePixel == null) {
+            Pixmap pixmap = new Pixmap(1,1, Pixmap.Format.RGBA8888);
+            pixmap.setColor(Color.WHITE);
+            pixmap.fill();
+            whitePixel = new Texture(pixmap);
+            pixmap.dispose();
         }
-
-        // Efecto de flicker sutil (solo si está habilitado)
-        if (flickerEnabled) {
-            float flickerIntensity = (float)(Math.sin(crtFlicker * 2) * 0.3 + 0.7);
-            if (random.nextInt(200) < 3) {
-                g2d.setColor(new Color(255, 255, 255, (int)(20 * flickerIntensity)));
-                g2d.fillRect(0, 0, width, height);
-            }
-        }
-
-        // Ruido en botones (menos intenso)
-        if (random.nextInt(400) < 2) {
-            for (int i = 0; i < 5; i++) {
-                int x = random.nextInt(width);
-                int y = random.nextInt(height);
-                g2d.setColor(new Color(255, 255, 255, random.nextInt(80)));
-                g2d.fillRect(x, y, 1, 1);
-            }
-        }
+        return whitePixel;
     }
 
-    private void startGame() {
-        // Crear y mostrar la pantalla de partida
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                // Ocultar la ventana actual
-                setVisible(false);
-
-                // En lugar de crear PantallaPartida, simplemente ocultamos esta ventana
-                // y mostramos un mensaje
-                JOptionPane.showMessageDialog(null,
-                        "Funcionalidad de partida deshabilitada",
-                        "Información",
-                        JOptionPane.INFORMATION_MESSAGE);
-
-                // Mostramos nuevamente el menú principal
-                setVisible(true);
-            }
-        });
+    @Override
+    public void pause() {
+        // no necesario
     }
 
-
-    // Método para crear checkboxes personalizados con cuadros negros
-    private JCheckBox createCustomCheckBox(String text, boolean selected) {
-        JCheckBox checkBox = new JCheckBox(text, selected) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2d = (Graphics2D) g.create();
-                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-                // Dibujar cuadro negro
-                g2d.setColor(Color.BLACK);
-                g2d.fillRect(0, 0, 16, 16);
-
-                // Dibujar borde
-                g2d.setColor(Color.CYAN);
-                g2d.drawRect(0, 0, 15, 15);
-
-                // Dibujar marca si está seleccionado
-                if (isSelected()) {
-                    g2d.setColor(Color.CYAN);
-                    g2d.setStroke(new BasicStroke(2));
-                    g2d.drawLine(4, 8, 7, 11);
-                    g2d.drawLine(7, 11, 12, 5);
-                }
-
-                g2d.dispose();
-
-                // Dibujar texto
-                FontMetrics fm = g.getFontMetrics();
-                g.setColor(Color.CYAN);
-                g.drawString(getText(), 20, fm.getAscent() + fm.getLeading() - 2);
-            }
-
-            @Override
-            public Dimension getPreferredSize() {
-                FontMetrics fm = getFontMetrics(getFont());
-                return new Dimension(20 + fm.stringWidth(getText()), Math.max(16, fm.getHeight()));
-            }
-        };
-
-        checkBox.setFont(font.deriveFont(14f));
-        checkBox.setOpaque(false);
-        checkBox.setForeground(Color.CYAN);
-        checkBox.setFocusPainted(false);
-
-        // Añadir listener para actualizar las preferencias en tiempo real
-        checkBox.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                // Actualizar preferencias inmediatamente cuando se cambia una opción
-                if (checkBox == crtCheckBox) {
-                    crtEnabled = checkBox.isSelected();
-                } else if (checkBox == flickerCheckBox) {
-                    flickerEnabled = checkBox.isSelected();
-                } else if (checkBox == shakeCheckBox) {
-                    shakeEnabled = checkBox.isSelected();
-                }
-            }
-        });
-
-        return checkBox;
+    @Override
+    public void resume() {
+        // no necesario
     }
 
-    // Método auxiliar para establecer la fuente recursivamente en un componente
-    private void setFontRecursively(Container container, Font font) {
-        for (Component component : container.getComponents()) {
-            component.setFont(font);
-            if (component instanceof Container) {
-                setFontRecursively((Container) component, font);
-            }
-        }
+    @Override
+    public void hide() {
+        // no necesario
     }
 
-    // Clase interna para botones personalizados con efectos hover y CRT
-    private class MenuButton extends JButton {
-        private boolean isHovered = false;
-        private float glowIntensity = 0.0f;
-        private Timer glowTimer;
-
-        public MenuButton(String text, int x, int y) {
-            super(text);
-            setBounds(x, y, 200, 50);
-            setContentAreaFilled(false);
-            setBorderPainted(false);
-            setFocusPainted(false);
-            // Usar la fuente personalizada
-            setFont(font.deriveFont(Font.BOLD, 18f));
-            setForeground(Color.CYAN);
-
-            // Timer para animación de brillo
-            glowTimer = new Timer(50, new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    if (isHovered && glowIntensity < 1.0f) {
-                        glowIntensity += 0.1f;
-                    } else if (!isHovered && glowIntensity > 0.0f) {
-                        glowIntensity -= 0.1f;
-                    }
-                    repaint();
-                }
-            });
-            glowTimer.start();
-
-            // Listeners para efectos hover
-            addMouseListener(new MouseAdapter() {
-                @Override
-                public void mouseEntered(MouseEvent e) {
-                    isHovered = true;
-                    setCursor(new Cursor(Cursor.HAND_CURSOR));
-                }
-
-                @Override
-                public void mouseExited(MouseEvent e) {
-                    isHovered = false;
-                    setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
-                }
-
-                @Override
-                public void mousePressed(MouseEvent e) {
-                    setForeground(Color.WHITE);
-                }
-
-                @Override
-                public void mouseReleased(MouseEvent e) {
-                    setForeground(Color.CYAN);
-                }
-            });
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            Graphics2D g2d = (Graphics2D) g.create();
-            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-            // Fondo del botón con efecto de brillo
-            if (glowIntensity > 0) {
-                // Efecto de resplandor
-                int glowSize = (int)(25 * glowIntensity);
-
-                for (int i = glowSize; i > 0; i--) {
-                    int alpha = (int)(40 * glowIntensity / (i + 1));
-                    g2d.setColor(new Color(0, 255, 255, alpha));
-                    g2d.fillRoundRect(-i, -i, getWidth() + 2*i, getHeight() + 2*i, 15, 15);
-                }
-            }
-
-            // Fondo del botón
-            Color bgColor = isHovered ?
-                    new Color(0, 120, 120, (int)(180 + 50 * glowIntensity)) :
-                    new Color(0, 60, 60, 120);
-            g2d.setColor(bgColor);
-            g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
-
-            // Borde del botón
-            g2d.setStroke(new BasicStroke(2));
-            Color borderColor = isHovered ? Color.WHITE : Color.CYAN;
-            g2d.setColor(borderColor);
-            g2d.drawRoundRect(1, 1, getWidth()-2, getHeight()-2, 10, 10);
-
-            // APLICAR EFECTO CRT AL BOTÓN
-            applyCRTToButton(g2d, getWidth(), getHeight());
-
-            // Texto del botón
-            FontMetrics fm = g2d.getFontMetrics(getFont());
-            int textX = (getWidth() - fm.stringWidth(getText())) / 2;
-            int textY = (getHeight() + fm.getAscent()) / 2 - 2;
-
-            // Efecto de sombra en el texto
-            g2d.setColor(Color.BLACK);
-            g2d.setFont(getFont());
-            g2d.drawString(getText(), textX + 2, textY + 2);
-
-            // Texto principal con efecto CRT
-            Color textColor = getForeground();
-            // Aplicar ligero flicker al texto (solo si está habilitado)
-            float textFlicker = 1.0f;
-            if (flickerEnabled) {
-                textFlicker = (float)(Math.sin(crtFlicker * 3) * 0.1 + 0.9);
-            }
-            int red = (int)(textColor.getRed() * textFlicker);
-            int green = (int)(textColor.getGreen() * textFlicker);
-            int blue = (int)(textColor.getBlue() * textFlicker);
-            g2d.setColor(new Color(red, green, blue));
-            g2d.drawString(getText(), textX, textY);
-
-            g2d.dispose();
-        }
+    @Override
+    public void show() {
+        // No es necesario implementar nada específico aquí para este menú
     }
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-                    // Establecer la fuente por defecto para todos los componentes Swing
-                    UIManager.put("Button.font", new Font("Dialog", Font.BOLD, 18));
-                    UIManager.put("OptionPane.font", new Font("Dialog", Font.PLAIN, 14));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    try {
-                        UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
-                    }
-                }
-
-                // Mostrar instrucciones para la imagen de fondo
-                System.out.println("=== INSTRUCCIONES PARA LA IMAGEN DE FONDO ===");
-                System.out.println("Coloque su imagen de fondo en la carpeta del proyecto con el nombre:");
-                System.out.println("- fondo.png (para PNG)");
-                System.out.println("Si no encuentra la imagen, usará un fondo procedural.");
-                System.out.println("===============================================");
-
-                new PantallaMenu();
-            }
-        });
+    @Override
+    public void dispose() {
+        batch.dispose();
+        shapeRenderer.dispose();
+        if (backgroundTexture != null) backgroundTexture.dispose();
+        if (optionsBackgroundTexture != null) optionsBackgroundTexture.dispose();
+        if (whitePixel != null) whitePixel.dispose();
+        if (font != null) font.dispose();
+        if (btnPlayTexture != null) btnPlayTexture.dispose();
+        if (btnOptionsTexture != null) btnOptionsTexture.dispose();
+        if (btnExitTexture != null) btnExitTexture.dispose();
+        if (btnCloseOptionsTexture != null) btnCloseOptionsTexture.dispose();
+        if (chkCheckedTexture != null) chkCheckedTexture.dispose();
+        if (chkUncheckedTexture != null) chkUncheckedTexture.dispose();
+        if (titleTexture != null) titleTexture.dispose();
     }
 }
