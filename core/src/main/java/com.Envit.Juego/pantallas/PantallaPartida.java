@@ -4,24 +4,55 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.util.Random;
-
+import javax.imageio.ImageIO;
 
 public class PantallaPartida {
     private Random random;
     
-    
     // Añadir ventana para mostrar la partida
     private JFrame ventana;
+    private BufferedImage barajaImage;
+    private BufferedImage[][] cartaImages;
 
     public PantallaPartida() {
         random = new Random();
+        cargarBaraja();
+    }
+
+    // Nuevo método para cargar y dividir la imagen de la baraja
+    private void cargarBaraja() {
+        try {
+            // Cargar la imagen de la baraja
+            barajaImage = ImageIO.read(getClass().getResourceAsStream("/baraja.png"));
+            
+            // Dividir la imagen en 12 columnas y 4 filas
+            int cartaWidth = barajaImage.getWidth() / 12;
+            int cartaHeight = barajaImage.getHeight() / 4;
+            
+            cartaImages = new BufferedImage[4][12];
+            
+            for (int fila = 0; fila < 4; fila++) {
+                for (int columna = 0; columna < 12; columna++) {
+                    cartaImages[fila][columna] = barajaImage.getSubimage(
+                        columna * cartaWidth, 
+                        fila * cartaHeight, 
+                        cartaWidth, 
+                        cartaHeight
+                    );
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            cartaImages = null;
+        }
     }
 
     // Nuevo método para mostrar la ventana de la partida
     public void mostrarVentana() {
-        // Deshabilitamos completamente la funcionalidad
-        /*
+
         ventana = new JFrame("Envit - Partida");
         ventana.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         ventana.setSize(1200, 750);
@@ -47,21 +78,39 @@ public class PantallaPartida {
                     int x = (getWidth() / 4) * (i + 1) - cartaWidth / 2;
                     int y = getHeight() / 2 - cartaHeight / 2;
                     
-                    // Dibujar carta
-                    g2d.setColor(Color.WHITE);
-                    g2d.fillRoundRect(x, y, cartaWidth, cartaHeight, 10, 10);
-                    g2d.setColor(Color.BLACK);
-                    g2d.drawRoundRect(x, y, cartaWidth, cartaHeight, 10, 10);
+                    // Seleccionar un número aleatorio entre 1 y 12
+                    int numeroCarta = random.nextInt(12) + 1;
                     
-                    // Dibujar número aleatorio en la carta
-                    g2d.setColor(Color.BLACK);
-                    Font font = new Font("Arial", Font.BOLD, 20);
-                    g2d.setFont(font);
-                    FontMetrics fm = g2d.getFontMetrics();
-                    String text = String.valueOf(random.nextInt(12) + 1);
-                    int textX = x + (cartaWidth - fm.stringWidth(text)) / 2;
-                    int textY = y + (cartaHeight + fm.getAscent()) / 2 - 3;
-                    g2d.drawString(text, textX, textY);
+                    // Dibujar la carta usando la imagen recortada
+                    if (cartaImages != null) {
+                        // Calcular la posición en la cuadrícula (fila y columna)
+                        // Para simplificar, usamos la primera fila y la columna correspondiente al número
+                        int fila = 0; // Podemos variar la fila también si queremos
+                        int columna = numeroCarta - 1; // 0-indexed
+                        
+                        // Escalar la imagen de la carta al tamaño deseado
+                        Image cartaEscalada = cartaImages[fila][columna].getScaledInstance(
+                            cartaWidth, cartaHeight, Image.SCALE_SMOOTH
+                        );
+                        
+                        g2d.drawImage(cartaEscalada, x, y, null);
+                    } else {
+                        // Fallback si no se pudo cargar la imagen
+                        g2d.setColor(Color.WHITE);
+                        g2d.fillRoundRect(x, y, cartaWidth, cartaHeight, 10, 10);
+                        g2d.setColor(Color.BLACK);
+                        g2d.drawRoundRect(x, y, cartaWidth, cartaHeight, 10, 10);
+                        
+                        // Dibujar número aleatorio en la carta
+                        g2d.setColor(Color.BLACK);
+                        Font font = new Font("Arial", Font.BOLD, 20);
+                        g2d.setFont(font);
+                        FontMetrics fm = g2d.getFontMetrics();
+                        String text = String.valueOf(numeroCarta);
+                        int textX = x + (cartaWidth - fm.stringWidth(text)) / 2;
+                        int textY = y + (cartaHeight + fm.getAscent()) / 2 - 3;
+                        g2d.drawString(text, textX, textY);
+                    }
                 }
                 
                 g2d.dispose();
@@ -85,7 +134,7 @@ public class PantallaPartida {
                         // En lugar de crear PantallaMenu directamente, mostramos un mensaje
                         // Esto evita el problema de dependencia circular
                         // new PantallaMenu();
-                        new PantallaMenu().setVisible(true);
+                        //new PantallaMenu().setVisible(true);
                     }
                 });
             }
@@ -93,13 +142,8 @@ public class PantallaPartida {
         panel.add(volverButton);
         
         ventana.setVisible(true);
-        */
         
-        // Mostramos un mensaje indicando que esta funcionalidad está deshabilitada
-        JOptionPane.showMessageDialog(null, 
-            "La pantalla de partida ha sido deshabilitada", 
-            "Funcionalidad no disponible", 
-            JOptionPane.INFORMATION_MESSAGE);
+        
     }
     
     // Añadimos método main para ejecutar directamente esta pantalla
@@ -113,11 +157,7 @@ public class PantallaPartida {
                     e.printStackTrace();
                 }
                 // En lugar de mostrar la partida, mostramos un mensaje
-                JOptionPane.showMessageDialog(null, 
-                    "La pantalla de partida ha sido deshabilitada", 
-                    "Funcionalidad no disponible", 
-                    JOptionPane.INFORMATION_MESSAGE);
-                // new PantallaPartida().mostrarVentana();
+                new PantallaPartida().mostrarVentana();
             }
         });
     }

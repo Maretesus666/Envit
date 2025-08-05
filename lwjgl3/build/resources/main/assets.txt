@@ -5,3 +5,4 @@ fuentes/dungeon.ttf
 fuentes/medieval.ttf
 libgdx.png
 sprites/baraja.png
+sprites/btn_jugar.png

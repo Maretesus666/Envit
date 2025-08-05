@@ -99,15 +99,15 @@ public class PantallaMenu implements Screen {
     }
 
     private void loadButtonTextures() {
-        // Cambia los nombres por los de tus archivos reales
+     /*   // Cambia los nombres por los de tus archivos reales
         btnPlayTexture = tryLoadTexture("sprites/btn_jugar.png");
-        btnOptionsTexture = tryLoadTexture("sprites/btn_opciones.png");
-        btnExitTexture = tryLoadTexture("sprites/btn_salir.png");
-        btnCloseOptionsTexture = tryLoadTexture("sprites/btn_cerrar.png");
-        chkCheckedTexture = tryLoadTexture("sprites/chk_on.png");
-        chkUncheckedTexture = tryLoadTexture("sprites/chk_off.png");
-        titleTexture = tryLoadTexture("sprites/titulo.png");
-    }
+        btnOptionsTexture = tryLoadTexture("sprites/btn_jugar.png");
+        btnExitTexture = tryLoadTexture("sprites/btn_jugar.png");
+        btnCloseOptionsTexture = tryLoadTexture("sprites/btn_jugar.png");
+        chkCheckedTexture = tryLoadTexture("sprites/btn_jugar.png");
+        chkUncheckedTexture = tryLoadTexture("sprites/pepi.png");
+        titleTexture = tryLoadTexture("sprites/btn_jugar.png");
+    */}
 
     private Texture tryLoadTexture(String path) {
         if (Gdx.files.internal(path).exists()) {
