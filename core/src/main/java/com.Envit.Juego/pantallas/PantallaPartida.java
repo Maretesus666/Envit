@@ -17,9 +17,10 @@ public class PantallaPartida implements Screen {
     private final Principal game;
     private SpriteBatch batch;
     private Texture barajaTexture;
+    private Texture fondoPartida;
     private TextureRegion[][] cartas; // [fila][columna]
     private int[][] cartasMostradas; // [3][2] -> fila, columna
-
+    private Partida partida;
     // Viewport para mantener relación de aspecto
     private static final float VIRTUAL_WIDTH = 1000;
     private static final float VIRTUAL_HEIGHT = 625;
@@ -30,12 +31,17 @@ public class PantallaPartida implements Screen {
     private EstadoJuego estado = EstadoJuego.JUGANDO;
 
     public PantallaPartida(Principal game) {
+
         this.game = game;
+        this.partida = new Partida();
+
+
     }
 
     @Override
     public void show() {
         batch = new SpriteBatch();
+        fondoPartida= new Texture(Gdx.files.internal("fondos/fondoPartida.png"));
         barajaTexture = new Texture(Gdx.files.internal("sprites/baraja.png"));
         cartas = new TextureRegion[4][12];
         viewport = new FitViewport(VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
@@ -75,6 +81,7 @@ public class PantallaPartida implements Screen {
         manejarInput();
 
         batch.begin();
+        batch.draw(fondoPartida, 0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
         int cartaW = 100, cartaH = 150;
         int espacio = 40;
         int totalW = 3 * cartaW + 2 * espacio;
@@ -152,5 +159,6 @@ public class PantallaPartida implements Screen {
         batch.dispose();
         barajaTexture.dispose();
         if (whitePixel != null) whitePixel.dispose();
+        if(fondoPartida != null) fondoPartida.dispose();
     }
 }

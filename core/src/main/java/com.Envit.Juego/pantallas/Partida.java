@@ -9,7 +9,7 @@ public class Partida {
     private ArrayList<Carta> cartasRepartidas = new ArrayList<>();
 
 
-    public void jugarRonda(Jugador jugador1, Jugador jugador2){
+    public void jugar(Jugador jugador1, Jugador jugador2){
      repartirCartas(jugador1,jugador2);
      finalizarRonda(jugador1,jugador2);
     }
