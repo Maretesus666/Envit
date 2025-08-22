@@ -3,6 +3,7 @@ package com.Envit.Juego.pantallas;
 import com.Envit.Juego.Principal;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g2d.*;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
@@ -59,6 +60,13 @@ public class PantallaMenu implements Screen {
     private Texture chkCheckedTexture, chkUncheckedTexture;
     private Texture titleTexture;
 
+    // Música de fondo (puedes agregar más en la lista)
+    private Music[] canciones;
+    private String[] rutasCanciones = {
+        "sounds/fuego.mp3", // pon aquí tus rutas reales
+        "sounds  /carta.wav"
+    };
+
     public PantallaMenu(final Principal game) {
         this.game = game;
 
@@ -74,6 +82,7 @@ public class PantallaMenu implements Screen {
         loadBackgrounds();
         loadButtonTextures();
         setButtonRects();
+        cargarMusicaFondo();
     }
 
     private void loadFont() {
@@ -141,13 +150,13 @@ public class PantallaMenu implements Screen {
         btnOptionsRect.set(centerX, startY + (btnH + espacio), btnW, btnH);
         btnExitRect.set(centerX, startY, btnW, btnH);
 
-        btnCloseOptionsRect.set(centerX, startY, btnW, btnH);
+        // Opciones: botón cerrar centrado y checkboxes debajo, centrados y con separación uniforme
+        btnCloseOptionsRect.set(centerX, startY + 2 * (btnH + espacio), btnW, btnH);
 
-        // Checkboxes perfectamente centrados debajo de los botones
         float chkW = 32, chkH = 32;
         float chkEspacio = 48;
         float chkTotalH = 3 * chkH + 2 * chkEspacio;
-        float chkStartY = h / 2f - chkTotalH / 2f - 80; // Debajo de los botones
+        float chkStartY = btnCloseOptionsRect.y - chkTotalH - 32; // debajo del botón cerrar
         float chkX = w / 2f - chkW / 2f;
         chkCRTBox.set(chkX, chkStartY + 2 * (chkH + chkEspacio), chkW, chkH);
         chkFlickerBox.set(chkX, chkStartY + (chkH + chkEspacio), chkW, chkH);
@@ -304,6 +313,18 @@ public class PantallaMenu implements Screen {
     private void startGame() {
         // Cambia a la pantalla de partida
         game.setScreen(new PantallaPartida(game));
+    }
+
+    private void cargarMusicaFondo() {
+        canciones = new Music[rutasCanciones.length];
+        for (int i = 0; i < rutasCanciones.length; i++) {
+            if (Gdx.files.internal(rutasCanciones[i]).exists()) {
+                canciones[i] = Gdx.audio.newMusic(Gdx.files.internal(rutasCanciones[i]));
+                canciones[i].setLooping(true);
+                canciones[i].setVolume(0.5f); // volumen medio
+                canciones[i].play();
+            }
+        }
     }
 
     private void drawProceduralBackground(SpriteBatch batch) {
@@ -465,5 +486,14 @@ public class PantallaMenu implements Screen {
         if (chkCheckedTexture != null) chkCheckedTexture.dispose();
         if (chkUncheckedTexture != null) chkUncheckedTexture.dispose();
         if (titleTexture != null) titleTexture.dispose();
+        // Detener y liberar música
+        if (canciones != null) {
+            for (Music musica : canciones) {
+                if (musica != null) {
+                    musica.stop();
+                    musica.dispose();
+                }
+            }
+        }
     }
 }
