@@ -7,5 +7,6 @@ fuentes/medieval.ttf
 libgdx.png
 sounds/carta.wav
 sounds/fuego.mp3
+sprites/Baraja2.png
 sprites/baraja.png
 sprites/btn_jugar.png

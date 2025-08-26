@@ -14,6 +14,7 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.audio.Sound;
 
 public class PantallaPartida implements Screen {
     private final Principal game;
@@ -41,6 +42,21 @@ public class PantallaPartida implements Screen {
     private Vector2 arrastreOffset = new Vector2();
     private int cartaSeleccionada = -1;
 
+    // Sonido al clickear carta
+    private Sound cartaClickSound;
+
+    // Posiciones objetivo para animación
+    private Vector2[] cartaPosObjetivo = new Vector2[3];
+
+    // Físicas para cartas
+    private Vector2[] cartaVel = new Vector2[3];
+    private Vector2[] cartaAcel = new Vector2[3];
+    private static final float CARTA_FUERZA_ARRASTRE = 200f;
+    private static final float CARTA_FRICCION = 0.85f;
+    private static final float CARTA_LERP = 0.18f; // velocidad de interpolación
+    private static final float CARTA_REPELENCIA = 1200f; // fuerza de repulsión entre cartas
+    private static final float CARTA_DISTANCIA_MIN = 90f; // distancia mínima antes de repeler
+
     public PantallaPartida(Principal game) {
 
         this.game = game;
@@ -54,19 +70,24 @@ public class PantallaPartida implements Screen {
         batch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
         fondoPartida= new Texture(Gdx.files.internal("fondos/fondoPartida.png"));
-        barajaTexture = new Texture(Gdx.files.internal("sprites/baraja.png"));
+        barajaTexture = new Texture(Gdx.files.internal("sprites/baraja2.png"));
         viewport = new FitViewport(VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
         recortarTresCartas();
         inicializarPosicionesCartas();
+        cartaClickSound = Gdx.audio.newSound(Gdx.files.internal("sounds/carta.wav"));
     }
 
     private void recortarTresCartas() {
-        int cartaW = barajaTexture.getWidth() / 13;
+        int cartaW = barajaTexture.getWidth() / 11;
         int cartaH = barajaTexture.getHeight() / 4;
         for (int i = 0; i < 3; i++) {
-            int fila = MathUtils.random(0, 3);
-            int col = MathUtils.random(0, 11);
-            cartasRecortadas[i] = new TextureRegion(barajaTexture, col * cartaW, fila * cartaH, cartaW, cartaH);
+            TextureRegion region = null;
+            do {
+                int fila = MathUtils.random(0, 3);
+                int col = MathUtils.random(0, 10); // 11 columnas, índice 0-10
+                region = new TextureRegion(barajaTexture, col * cartaW, fila * cartaH, cartaW, cartaH);
+            } while (region == null || region.getRegionWidth() == 0 || region.getRegionHeight() == 0);
+            cartasRecortadas[i] = region;
         }
     }
 
@@ -78,7 +99,10 @@ public class PantallaPartida implements Screen {
         int y = (int)(VIRTUAL_HEIGHT / 2 - cartaH / 2);
         for (int i = 0; i < 3; i++) {
             cartaPos[i] = new Vector2(startX + i * (cartaW + espacio), y);
+            cartaPosObjetivo[i] = new Vector2(cartaPos[i].x, cartaPos[i].y);
             cartaArrastrando[i] = false;
+            cartaVel[i] = new Vector2(0, 0);
+            cartaAcel[i] = new Vector2(0, 0);
         }
     }
 
@@ -93,33 +117,84 @@ public class PantallaPartida implements Screen {
 
         manejarInput();
 
+        // Físicas y animación de cartas
+        for (int i = 0; i < 3; i++) {
+            // Repulsión entre cartas
+            for (int j = 0; j < 3; j++) {
+                if (i == j) continue;
+                float cartaW = 100, cartaH = 150;
+                Vector2 centroA = new Vector2(cartaPos[i].x + cartaW/2, cartaPos[i].y + cartaH/2);
+                Vector2 centroB = new Vector2(cartaPos[j].x + cartaW/2, cartaPos[j].y + cartaH/2);
+                float dist = centroA.dst(centroB);
+                if (dist < CARTA_DISTANCIA_MIN) {
+                    // Calcula fuerza de repulsión
+                    Vector2 dir = new Vector2(centroA.x - centroB.x, centroA.y - centroB.y);
+                    if (dir.len() == 0) dir.set(MathUtils.random(-1f,1f), MathUtils.random(-1f,1f));
+                    dir.nor();
+                    float fuerza = (CARTA_DISTANCIA_MIN - dist) / CARTA_DISTANCIA_MIN * CARTA_REPELENCIA * delta;
+                    cartaVel[i].add(dir.scl(fuerza));
+                }
+            }
+
+            if (cartaArrastrando[i]) {
+                // Mientras se arrastra, la carta sigue al mouse con aceleración
+                Vector2 target = cartaPosObjetivo[i];
+                Vector2 dir = new Vector2(target.x - cartaPos[i].x, target.y - cartaPos[i].y);
+                cartaAcel[i].set(dir.scl(CARTA_FUERZA_ARRASTRE));
+            } else {
+                // Cuando no se arrastra, desacelera por fricción
+                cartaAcel[i].setZero();
+                cartaVel[i].scl(CARTA_FRICCION);
+            }
+            cartaVel[i].add(cartaAcel[i].scl(delta));
+            cartaPos[i].add(cartaVel[i].scl(delta));
+            // Si está muy cerca del objetivo y no arrastrando, lo ajusta
+            if (!cartaArrastrando[i] && cartaPos[i].dst(cartaPosObjetivo[i]) > 1f) {
+                cartaPos[i].lerp(cartaPosObjetivo[i], CARTA_LERP);
+            }
+        }
+
         // Dibuja fondo de partida
         batch.begin();
         batch.draw(fondoPartida, 0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
         batch.end();
 
-        // Dibuja fondos de cartas con esquinas redondeadas
+        // Dibuja fondos de cartas con esquinas redondeadas (opaco)
         int cartaW = 100, cartaH = 150;
         float radio = 14f;
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        shapeRenderer.setColor(Color.WHITE);
-        for (int i = 0; i < 3; i++) {
+        shapeRenderer.setColor(1, 1, 1, 1); // Blanco opaco
+        int[] orden = {0, 1, 2};
+        if (cartaSeleccionada != -1) {
+            int idx = cartaSeleccionada;
+            if (orden[2] != idx) {
+                for (int i = 0; i < 3; i++) {
+                    if (orden[i] == idx) {
+                        for (int j = i; j < 2; j++) orden[j] = orden[j+1];
+                        orden[2] = idx;
+                        break;
+                    }
+                }
+            }
+        }
+        for (int k = 0; k < 3; k++) {
+            int i = orden[k];
             dibujarRectRedondeado(shapeRenderer, cartaPos[i].x, cartaPos[i].y, cartaW, cartaH, radio);
         }
         shapeRenderer.end();
 
-        // Dibuja las cartas encima del fondo blanco
+        // Dibuja las cartas encima del fondo blanco, en el mismo orden
         batch.begin();
-        for (int i = 0; i < 3; i++) {
-            batch.draw(cartasRecortadas[i], cartaPos[i].x, cartaPos[i].y, cartaW, cartaH);
+        for (int k = 0; k < 3; k++) {
+            int i = orden[k];
+            if (cartasRecortadas[i] != null && cartasRecortadas[i].getRegionWidth() > 0 && cartasRecortadas[i].getRegionHeight() > 0) {
+                batch.draw(cartasRecortadas[i], cartaPos[i].x, cartaPos[i].y, cartaW, cartaH);
+            }
         }
-
-        // Overlay de pausa
         if (estado == EstadoJuego.PAUSADO) {
             batch.setColor(0, 0, 0, 0.5f);
             batch.draw(getWhitePixel(), 0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
             batch.setColor(Color.WHITE);
-            // Aquí podrías dibujar el texto de pausa con BitmapFont si lo tienes
         }
         batch.end();
     }
@@ -152,7 +227,6 @@ public class PantallaPartida implements Screen {
             game.setScreen(new PantallaMenu(game));
         }
 
-        // Arrastrar cartas con mouse
         Vector2 mouse = viewport.unproject(new Vector2(Gdx.input.getX(), Gdx.input.getY()));
         if (Gdx.input.justTouched()) {
             for (int i = 0; i < 3; i++) {
@@ -162,19 +236,45 @@ public class PantallaPartida implements Screen {
                     cartaArrastrando[i] = true;
                     cartaSeleccionada = i;
                     arrastreOffset.set(mouse.x - cartaPos[i].x, mouse.y - cartaPos[i].y);
+                    if (cartaClickSound != null) cartaClickSound.play(0.7f);
                     break;
                 }
             }
         }
         if (Gdx.input.isTouched() && cartaSeleccionada != -1) {
-            cartaPos[cartaSeleccionada].set(mouse.x - arrastreOffset.x, mouse.y - arrastreOffset.y);
+            cartaPosObjetivo[cartaSeleccionada].set(mouse.x - arrastreOffset.x, mouse.y - arrastreOffset.y);
         }
         if (!Gdx.input.isTouched()) {
             if (cartaSeleccionada != -1) {
                 cartaArrastrando[cartaSeleccionada] = false;
+                ajustarPosicionCarta(cartaSeleccionada);
                 cartaSeleccionada = -1;
             }
         }
+    }
+
+    // Evita que la carta seleccionada se superponga con las otras
+    private void ajustarPosicionCarta(int idx) {
+        int cartaW = 100, cartaH = 150;
+        for (int i = 0; i < 3; i++) {
+            if (i == idx) continue;
+            if (rectsSolapan(cartaPos[idx], cartaPos[i], cartaW, cartaH)) {
+                // Mueve la carta seleccionada a la posición más cercana libre (a la derecha)
+                float espacio = 20;
+                float nuevaX = cartaPos[i].x + cartaW + espacio;
+                if (nuevaX + cartaW > VIRTUAL_WIDTH) {
+                    // Si se sale de pantalla, la mueve a la izquierda
+                    nuevaX = cartaPos[i].x - cartaW - espacio;
+                    if (nuevaX < 0) nuevaX = 0;
+                }
+                cartaPos[idx].x = nuevaX;
+                // Opcional: también puedes ajustar Y si quieres
+            }
+        }
+    }
+
+    private boolean rectsSolapan(Vector2 a, Vector2 b, int w, int h) {
+        return a.x < b.x + w && a.x + w > b.x && a.y < b.y + h && a.y + h > b.y;
     }
 
     // Textura 1x1 blanca para overlays
@@ -213,5 +313,7 @@ public class PantallaPartida implements Screen {
         barajaTexture.dispose();
         if (whitePixel != null) whitePixel.dispose();
         if(fondoPartida != null) fondoPartida.dispose();
+        if (cartaClickSound != null) cartaClickSound.dispose();
     }
 }
+
