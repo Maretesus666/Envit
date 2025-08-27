@@ -51,11 +51,8 @@ public class PantallaPartida implements Screen {
     // Físicas para cartas
     private Vector2[] cartaVel = new Vector2[3];
     private Vector2[] cartaAcel = new Vector2[3];
-    private static final float CARTA_FUERZA_ARRASTRE = 200f;
-    private static final float CARTA_FRICCION = 0.85f;
-    private static final float CARTA_LERP = 0.18f; // velocidad de interpolación
-    private static final float CARTA_REPELENCIA = 1200f; // fuerza de repulsión entre cartas
-    private static final float CARTA_DISTANCIA_MIN = 90f; // distancia mínima antes de repeler
+    private static final float CARTA_REPELENCIA = 42000f; // fuerza de repulsión entre cartas
+    private static final float CARTA_DISTANCIA_MIN = 100f; // distancia mínima antes de repeler
 
     public PantallaPartida(Principal game) {
 
@@ -117,40 +114,23 @@ public class PantallaPartida implements Screen {
 
         manejarInput();
 
-        // Físicas y animación de cartas
+        // Solo empuje entre cartas no arrastradas
         for (int i = 0; i < 3; i++) {
-            // Repulsión entre cartas
+            if (cartaArrastrando[i]) continue; // La carta arrastrada no se empuja
             for (int j = 0; j < 3; j++) {
-                if (i == j) continue;
+                if (i == j || cartaArrastrando[j]) continue; // No empujar si la otra está arrastrada
                 float cartaW = 100, cartaH = 150;
                 Vector2 centroA = new Vector2(cartaPos[i].x + cartaW/2, cartaPos[i].y + cartaH/2);
                 Vector2 centroB = new Vector2(cartaPos[j].x + cartaW/2, cartaPos[j].y + cartaH/2);
                 float dist = centroA.dst(centroB);
                 if (dist < CARTA_DISTANCIA_MIN) {
-                    // Calcula fuerza de repulsión
                     Vector2 dir = new Vector2(centroA.x - centroB.x, centroA.y - centroB.y);
                     if (dir.len() == 0) dir.set(MathUtils.random(-1f,1f), MathUtils.random(-1f,1f));
                     dir.nor();
                     float fuerza = (CARTA_DISTANCIA_MIN - dist) / CARTA_DISTANCIA_MIN * CARTA_REPELENCIA * delta;
-                    cartaVel[i].add(dir.scl(fuerza));
+                    // Empuja la carta quieta
+                    cartaPos[i].add(dir.scl(fuerza * 0.01f)); // factor pequeño para suavidad
                 }
-            }
-
-            if (cartaArrastrando[i]) {
-                // Mientras se arrastra, la carta sigue al mouse con aceleración
-                Vector2 target = cartaPosObjetivo[i];
-                Vector2 dir = new Vector2(target.x - cartaPos[i].x, target.y - cartaPos[i].y);
-                cartaAcel[i].set(dir.scl(CARTA_FUERZA_ARRASTRE));
-            } else {
-                // Cuando no se arrastra, desacelera por fricción
-                cartaAcel[i].setZero();
-                cartaVel[i].scl(CARTA_FRICCION);
-            }
-            cartaVel[i].add(cartaAcel[i].scl(delta));
-            cartaPos[i].add(cartaVel[i].scl(delta));
-            // Si está muy cerca del objetivo y no arrastrando, lo ajusta
-            if (!cartaArrastrando[i] && cartaPos[i].dst(cartaPosObjetivo[i]) > 1f) {
-                cartaPos[i].lerp(cartaPosObjetivo[i], CARTA_LERP);
             }
         }
 
@@ -159,11 +139,8 @@ public class PantallaPartida implements Screen {
         batch.draw(fondoPartida, 0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
         batch.end();
 
-        // Dibuja fondos de cartas con esquinas redondeadas (opaco)
         int cartaW = 100, cartaH = 150;
         float radio = 14f;
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        shapeRenderer.setColor(1, 1, 1, 1); // Blanco opaco
         int[] orden = {0, 1, 2};
         if (cartaSeleccionada != -1) {
             int idx = cartaSeleccionada;
@@ -177,20 +154,24 @@ public class PantallaPartida implements Screen {
                 }
             }
         }
-        for (int k = 0; k < 3; k++) {
-            int i = orden[k];
-            dibujarRectRedondeado(shapeRenderer, cartaPos[i].x, cartaPos[i].y, cartaW, cartaH, radio);
-        }
-        shapeRenderer.end();
 
-        // Dibuja las cartas encima del fondo blanco, en el mismo orden
-        batch.begin();
+        // Dibuja cada carta: primero fondo blanco opaco, luego imagen, siguiendo el orden de apilamiento
         for (int k = 0; k < 3; k++) {
             int i = orden[k];
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            shapeRenderer.setColor(1, 1, 1, 1); // Blanco opaco
+            dibujarRectRedondeado(shapeRenderer, cartaPos[i].x, cartaPos[i].y, cartaW, cartaH, radio);
+            shapeRenderer.end();
+
+            batch.begin();
             if (cartasRecortadas[i] != null && cartasRecortadas[i].getRegionWidth() > 0 && cartasRecortadas[i].getRegionHeight() > 0) {
                 batch.draw(cartasRecortadas[i], cartaPos[i].x, cartaPos[i].y, cartaW, cartaH);
             }
+            batch.end();
         }
+
+        // Overlay de pausa
+        batch.begin();
         if (estado == EstadoJuego.PAUSADO) {
             batch.setColor(0, 0, 0, 0.5f);
             batch.draw(getWhitePixel(), 0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
@@ -241,13 +222,13 @@ public class PantallaPartida implements Screen {
                 }
             }
         }
+        // Movimiento directo de la carta arrastrada
         if (Gdx.input.isTouched() && cartaSeleccionada != -1) {
-            cartaPosObjetivo[cartaSeleccionada].set(mouse.x - arrastreOffset.x, mouse.y - arrastreOffset.y);
+            cartaPos[cartaSeleccionada].set(mouse.x - arrastreOffset.x, mouse.y - arrastreOffset.y);
         }
         if (!Gdx.input.isTouched()) {
             if (cartaSeleccionada != -1) {
                 cartaArrastrando[cartaSeleccionada] = false;
-                ajustarPosicionCarta(cartaSeleccionada);
                 cartaSeleccionada = -1;
             }
         }
@@ -316,4 +297,3 @@ public class PantallaPartida implements Screen {
         if (cartaClickSound != null) cartaClickSound.dispose();
     }
 }
-
