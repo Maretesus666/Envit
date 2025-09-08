@@ -11,6 +11,8 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
+
 
 import java.util.Random;
 
@@ -143,9 +145,9 @@ public class PantallaMenu implements Screen {
         float btnW = 240, btnH = 60;
         float espacio = 32;
         float totalH = 3 * btnH + 2 * espacio;
-        float startY = h / 2f - totalH / 2f;
+        float startY = h / 3.5f - totalH / 2f;
 
-        float centerX = w / 2f - btnW / 2f;
+        float centerX = w / 1.15f - btnW / 2f;
         btnPlayRect.set(centerX, startY + 2 * (btnH + espacio), btnW, btnH);
         btnOptionsRect.set(centerX, startY + (btnH + espacio), btnW, btnH);
         btnExitRect.set(centerX, startY, btnW, btnH);
@@ -212,9 +214,9 @@ public class PantallaMenu implements Screen {
         if (titleTexture != null) {
             batch.draw(titleTexture, VIRTUAL_WIDTH/2f - titleTexture.getWidth()/2f, VIRTUAL_HEIGHT - 120);
         } else if (font != null) {
-            font.setColor(Color.CYAN);
-            font.getData().setScale(2f);
-            font.draw(batch, "Envit", VIRTUAL_WIDTH/2f - 80, VIRTUAL_HEIGHT - 80);
+            font.setColor(Color.valueOf("F0C850"));
+            font.getData().setScale(4.75f);
+            font.draw(batch, "Envit", VIRTUAL_WIDTH/2f - 170, VIRTUAL_HEIGHT - 220);
         }
 
         // Dibuja los botones principales
@@ -241,27 +243,35 @@ public class PantallaMenu implements Screen {
     }
 
     private void drawButton(SpriteBatch batch, Texture texture, Rectangle rect, String texto) {
+        // Detectar si el mouse está sobre el botón
         com.badlogic.gdx.math.Vector2 mouse = viewport.unproject(new com.badlogic.gdx.math.Vector2(Gdx.input.getX(), Gdx.input.getY()));
         boolean hovered = rect.contains(mouse.x, mouse.y);
 
-        // Fondo centrado y hover uniforme
+        // Dibujar fondo del botón
         if (texture != null) {
-            batch.setColor(hovered ? new Color(0.7f, 1f, 1f, 1f) : Color.WHITE);
+            batch.setColor(hovered ? new Color(15, 55, 175, 1) : Color.WHITE);
             batch.draw(texture, rect.x, rect.y, rect.width, rect.height);
-            batch.setColor(Color.WHITE);
+            batch.setColor(Color.GOLDENROD);
         } else if (font != null) {
-            batch.setColor(hovered ? new Color(0,1,1,0.25f) : new Color(0,0,0,0.25f));
+            batch.setColor(hovered ? new Color(15, 55, 175, 0.25f) : new Color(0,0,0,0.25f));
             batch.draw(getWhitePixel(), rect.x, rect.y, rect.width, rect.height);
             batch.setColor(Color.WHITE);
-            font.setColor(hovered ? Color.CYAN : Color.WHITE);
+        }
+
+        // Dibujar texto centrado
+        if (font != null) {
+            font.setColor(hovered ? Color.valueOf("F0C850") : Color.WHITE);
             font.getData().setScale(1.2f);
-            // Centrado horizontal y vertical
-            float textWidth = font.getRegion().getRegionWidth();
-            float textX = rect.x + rect.width / 2 - 50;
-            float textY = rect.y + rect.height / 2 + 15;
-            font.draw(batch, texto, textX, textY);
+
+            GlyphLayout layout = new GlyphLayout(font, texto);
+
+            float textX = rect.x + (rect.width - layout.width) / 2f;
+            float textY = rect.y + (rect.height + layout.height) / 2f;
+
+            font.draw(batch, layout, textX, textY);
         }
     }
+
 
     private void drawCheckbox(SpriteBatch batch, Rectangle rect, boolean checked, String label) {
         com.badlogic.gdx.math.Vector2 mouse = viewport.unproject(new com.badlogic.gdx.math.Vector2(Gdx.input.getX(), Gdx.input.getY()));
@@ -277,7 +287,7 @@ public class PantallaMenu implements Screen {
             batch.setColor(Color.WHITE);
         }
         if (font != null) {
-            font.setColor(hovered ? Color.CYAN : Color.WHITE);
+            font.setColor(hovered ? Color.valueOf("F0C850") : Color.WHITE);
             font.getData().setScale(1f);
             // Centrado vertical respecto a la caja
             float labelX = rect.x + rect.width + 16;
