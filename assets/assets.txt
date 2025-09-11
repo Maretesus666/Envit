@@ -10,3 +10,5 @@ sounds/fuego.mp3
 sprites/Baraja2.png
 sprites/baraja.png
 sprites/btn_jugar.png
+sprites/casilla.png
+sprites/marcoCarta.png
