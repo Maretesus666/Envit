@@ -29,7 +29,7 @@ public class PantallaMenu implements Screen {
 
     private boolean inOptionsMode = false;
 
-    // Efectos CRT
+
     private boolean crtEnabled = true;
     private boolean flickerEnabled = true;
     private boolean shakeEnabled = true;
@@ -39,16 +39,11 @@ public class PantallaMenu implements Screen {
 
     private Random random = new Random();
 
-    // Viewport para mantener relación de aspecto
     private static final float VIRTUAL_WIDTH = 1280;
     private static final float VIRTUAL_HEIGHT = 720;
     private Viewport viewport;
 
-    // UI
-    // Eliminados: TextButton, CheckBox, Label, Skin
-    // En su lugar, usaremos tus propios assets y lógica manual
 
-    // Ejemplo de posiciones para tus botones
     private Rectangle btnPlayRect = new Rectangle();
     private Rectangle btnOptionsRect = new Rectangle();
     private Rectangle btnExitRect = new Rectangle();
@@ -57,16 +52,16 @@ public class PantallaMenu implements Screen {
     private Rectangle chkFlickerBox = new Rectangle();
     private Rectangle chkShakeBox = new Rectangle();
 
-    // Texturas para tus botones (deberás poner los nombres correctos de tus archivos)
+
     private Texture btnPlayTexture, btnOptionsTexture, btnExitTexture, btnCloseOptionsTexture;
     private Texture chkCheckedTexture, chkUncheckedTexture;
     private Texture titleTexture;
 
-    // Música de fondo (puedes agregar más en la lista)
+
     private Music[] canciones;
     private String[] rutasCanciones = {
-        "sounds/fuego.mp3", // pon aquí tus rutas reales
-        "sounds  /carta.wav"
+        "sounds/fuego.mp3"
+
     };
 
     public PantallaMenu(final Principal game) {
@@ -75,11 +70,10 @@ public class PantallaMenu implements Screen {
         batch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
 
-        // Viewport para mantener aspecto
+
         viewport = new FitViewport(VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
 
-        // Stage eliminado, ya no se usa Scene2D
-        // Cargar tus texturas personalizadas
+
         loadFont();
         loadBackgrounds();
         loadButtonTextures();
@@ -89,8 +83,7 @@ public class PantallaMenu implements Screen {
 
     private void loadFont() {
         try {
-            // Quitar "assets/" de la ruta, solo poner la ruta relativa desde assets
-            FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("fuentes/medieval.ttf"));
+             FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("fuentes/medieval.ttf"));
             FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
             parameter.size = 36;
             font = generator.generateFont(parameter);
@@ -102,8 +95,7 @@ public class PantallaMenu implements Screen {
     }
 
     private void loadBackgrounds() {
-        // Quitar "assets/" de la ruta, solo poner la ruta relativa desde assets
-        if (Gdx.files.internal("fondos/fondo.png").exists()) {
+         if (Gdx.files.internal("fondos/fondo.png").exists()) {
             backgroundTexture = new Texture(Gdx.files.internal("fondos/fondo.png"));
             Gdx.app.log("PantallaMenu", "Fondo principal cargado correctamente");
         } else {
@@ -120,7 +112,7 @@ public class PantallaMenu implements Screen {
     }
 
     private void loadButtonTextures() {
-     /*   // Cambia los nombres por los de tus archivos reales
+     /*
         btnPlayTexture = tryLoadTexture("sprites/btn_jugar.png");
         btnOptionsTexture = tryLoadTexture("sprites/btn_jugar.png");
         btnExitTexture = tryLoadTexture("sprites/btn_jugar.png");
@@ -152,14 +144,14 @@ public class PantallaMenu implements Screen {
         btnOptionsRect.set(centerX, startY + (btnH + espacio), btnW, btnH);
         btnExitRect.set(centerX, startY, btnW, btnH);
 
-        // Opciones: botón cerrar centrado y checkboxes debajo, centrados y con separación uniforme
-        btnCloseOptionsRect.set(centerX, startY + 2 * (btnH + espacio), btnW, btnH);
 
-        float chkW = 32, chkH = 32;
+        btnCloseOptionsRect.set(centerX-64, -startY + 2 * (btnH + espacio), btnW, btnH);
+        //checkbox
+        float chkW = 56, chkH = 56;
         float chkEspacio = 48;
         float chkTotalH = 3 * chkH + 2 * chkEspacio;
-        float chkStartY = btnCloseOptionsRect.y - chkTotalH - 32; // debajo del botón cerrar
-        float chkX = w / 2f - chkW / 2f;
+        float chkStartY = chkTotalH - 160;
+        float chkX = w / 2.5f - chkW / 2f;
         chkCRTBox.set(chkX, chkStartY + 2 * (chkH + chkEspacio), chkW, chkH);
         chkFlickerBox.set(chkX, chkStartY + (chkH + chkEspacio), chkW, chkH);
         chkShakeBox.set(chkX, chkStartY, chkW, chkH);
@@ -173,7 +165,7 @@ public class PantallaMenu implements Screen {
 
     @Override
     public void render(float delta) {
-        // Actualizar lógica efectos CRT
+
         if (crtEnabled) {
             scanlineOffset += 60 * delta * 0.5f;
             if (scanlineOffset > 4) scanlineOffset = 0;
@@ -184,19 +176,17 @@ public class PantallaMenu implements Screen {
             if (crtFlicker > Math.PI * 2) crtFlicker = 0;
         }
 
-        // Limpiar pantalla
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // Aplicar viewport antes de dibujar
         viewport.apply();
         batch.setProjectionMatrix(viewport.getCamera().combined);
         shapeRenderer.setProjectionMatrix(viewport.getCamera().combined);
 
         batch.begin();
 
-        // Dibujar fondo (según modo)
-        if (!inOptionsMode) {
+
+          if (!inOptionsMode) {
             if (backgroundTexture != null) {
                 batch.draw(backgroundTexture, 0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
             } else {
@@ -210,8 +200,8 @@ public class PantallaMenu implements Screen {
             }
         }
 
-        // Dibuja el título
-        if (titleTexture != null) {
+
+       if (titleTexture != null) {
             batch.draw(titleTexture, VIRTUAL_WIDTH/2f - titleTexture.getWidth()/2f, VIRTUAL_HEIGHT - 120);
         } else if (font != null) {
             font.setColor(Color.valueOf("F0C850"));
@@ -219,7 +209,7 @@ public class PantallaMenu implements Screen {
             font.draw(batch, "Envit", VIRTUAL_WIDTH/2f - 170, VIRTUAL_HEIGHT - 220);
         }
 
-        // Dibuja los botones principales
+
         if (!inOptionsMode) {
             drawButton(batch, btnPlayTexture, btnPlayRect, "JUGAR");
             drawButton(batch, btnOptionsTexture, btnOptionsRect, "OPCIONES");
@@ -233,22 +223,18 @@ public class PantallaMenu implements Screen {
         }
         batch.end();
 
-        // Dibujar efecto CRT
-        if (crtEnabled) {
+         if (crtEnabled) {
             drawCRTEffect();
         }
 
-        // Manejo de input manual para botones y checkboxes
-        handleInput();
+          handleInput();
     }
 
     private void drawButton(SpriteBatch batch, Texture texture, Rectangle rect, String texto) {
-        // Detectar si el mouse está sobre el botón
-        com.badlogic.gdx.math.Vector2 mouse = viewport.unproject(new com.badlogic.gdx.math.Vector2(Gdx.input.getX(), Gdx.input.getY()));
+         com.badlogic.gdx.math.Vector2 mouse = viewport.unproject(new com.badlogic.gdx.math.Vector2(Gdx.input.getX(), Gdx.input.getY()));
         boolean hovered = rect.contains(mouse.x, mouse.y);
 
-        // Dibujar fondo del botón
-        if (texture != null) {
+          if (texture != null) {
             batch.setColor(hovered ? new Color(15, 55, 175, 1) : Color.WHITE);
             batch.draw(texture, rect.x, rect.y, rect.width, rect.height);
             batch.setColor(Color.GOLDENROD);
@@ -258,8 +244,7 @@ public class PantallaMenu implements Screen {
             batch.setColor(Color.WHITE);
         }
 
-        // Dibujar texto centrado
-        if (font != null) {
+         if (font != null) {
             font.setColor(hovered ? Color.valueOf("F0C850") : Color.WHITE);
             font.getData().setScale(1.2f);
 
@@ -289,16 +274,16 @@ public class PantallaMenu implements Screen {
         if (font != null) {
             font.setColor(hovered ? Color.valueOf("F0C850") : Color.WHITE);
             font.getData().setScale(1f);
-            // Centrado vertical respecto a la caja
+            // texto checkbox
             float labelX = rect.x + rect.width + 16;
-            float labelY = rect.y + rect.height - 8;
+            float labelY = rect.y + rect.height - 16;
             font.draw(batch, label, labelX, labelY);
         }
     }
 
     private void handleInput() {
         if (Gdx.input.justTouched()) {
-            // Para input, usamos el método unproject del viewport
+
             com.badlogic.gdx.math.Vector2 touch = viewport.unproject(new com.badlogic.gdx.math.Vector2(Gdx.input.getX(), Gdx.input.getY()));
             float x = touch.x;
             float y = touch.y;
@@ -331,24 +316,24 @@ public class PantallaMenu implements Screen {
             if (Gdx.files.internal(rutasCanciones[i]).exists()) {
                 canciones[i] = Gdx.audio.newMusic(Gdx.files.internal(rutasCanciones[i]));
                 canciones[i].setLooping(true);
-                canciones[i].setVolume(0.5f); // volumen medio
+                canciones[i].setVolume(0.5f);
                 canciones[i].play();
             }
         }
     }
 
     private void drawProceduralBackground(SpriteBatch batch) {
-        // Para algo simple, dibujamos un fondo con gradient manual (puede ser con ShapeRenderer si querés)
+
         batch.end();
 
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         int w = Gdx.graphics.getWidth();
         int h = Gdx.graphics.getHeight();
 
-        // Gradient vertical manual simulando tu fondo original
+
         shapeRenderer.rect(0, 0, w, h, new Color(0.04f, 0.04f, 0.12f,1), new Color(0.16f, 0.04f, 0.24f,1), new Color(0.24f, 0.08f, 0.39f,1), new Color(0.04f, 0.16f, 0.39f,1));
 
-        // Elementos gráficos retro simples
+
         for (int i = 0; i < 15; i++) {
             float x = random.nextInt(w);
             float y = random.nextInt(h);
@@ -357,7 +342,7 @@ public class PantallaMenu implements Screen {
             shapeRenderer.circle(x, y, size);
         }
 
-        // Líneas de circuito
+
         shapeRenderer.setColor(1, 0, 1, 0.16f);
         for (int i = 0; i < 20; i++) {
             float x1 = random.nextInt(w);
@@ -379,10 +364,10 @@ public class PantallaMenu implements Screen {
         int w = Gdx.graphics.getWidth();
         int h = Gdx.graphics.getHeight();
 
-        // Gradientes para opciones (como en tu código)
-        // Parte 1
+
+
         shapeRenderer.rect(0, 0, w / 2, h / 2, new Color(0.04f, 0.04f, 0.12f,1), new Color(0.16f, 0.04f, 0.24f,1), new Color(0.24f, 0.08f, 0.39f,1), new Color(0.04f, 0.16f, 0.39f,1));
-        // Parte 2
+
         shapeRenderer.rect(w / 2, 0, w / 2, h, new Color(0.24f, 0.08f, 0.39f, 0.39f), new Color(0.08f, 0.16f, 0.39f, 0.39f), new Color(0.08f, 0.16f, 0.39f, 0.39f), new Color(0.24f, 0.08f, 0.39f, 0.39f));
 
         shapeRenderer.end();
@@ -398,13 +383,13 @@ public class PantallaMenu implements Screen {
         int w = (int)VIRTUAL_WIDTH;
         int h = (int)VIRTUAL_HEIGHT;
 
-        // Líneas de escaneo horizontales perfectamente alineadas
+
         shapeRenderer.setColor(0, 0, 0, 0.13f);
         for (int y = (int) scanlineOffset; y < h; y += 3) {
             shapeRenderer.rect(0, y, w, 1);
         }
 
-        // Líneas verticales ocasionales
+
         if (random.nextInt(60) < 2) {
             shapeRenderer.setColor(0, 0, 0, 0.06f);
             for (int x = 0; x < w; x += 2) {
@@ -414,7 +399,7 @@ public class PantallaMenu implements Screen {
 
         shapeRenderer.end();
 
-        // Flicker (destello global sutil y centrado)
+
         if (flickerEnabled && random.nextInt(100) < 8) {
             batch.begin();
             Color flickerColor = new Color(1,1,1, 0.04f + 0.07f * (float)Math.sin(crtFlicker));
@@ -424,7 +409,7 @@ public class PantallaMenu implements Screen {
             batch.end();
         }
 
-        // Ruido estático centrado
+
         if (random.nextInt(150) < 2) {
             shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
             for (int i = 0; i < 40; i++) {
@@ -437,7 +422,7 @@ public class PantallaMenu implements Screen {
             shapeRenderer.end();
         }
 
-        // Distorsión horizontal ocasional (temblor)
+
         if (shakeEnabled && random.nextInt(300) < 2) {
             shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
             int distortY = random.nextInt(h);
@@ -447,7 +432,7 @@ public class PantallaMenu implements Screen {
         }
     }
 
-    // Textura 1x1 blanca para dibujar rectángulos simples
+
     private Texture whitePixel;
 
     private Texture getWhitePixel() {
@@ -463,22 +448,22 @@ public class PantallaMenu implements Screen {
 
     @Override
     public void pause() {
-        // no necesario
+
     }
 
     @Override
     public void resume() {
-        // no necesario
+
     }
 
     @Override
     public void hide() {
-        // no necesario
+
     }
 
     @Override
     public void show() {
-        // No es necesario
+
     }
 
     @Override
