@@ -342,6 +342,7 @@ public class PantallaPartida implements Screen {
         }
     }
 
+
     @Override
     public void pause() {}
 
