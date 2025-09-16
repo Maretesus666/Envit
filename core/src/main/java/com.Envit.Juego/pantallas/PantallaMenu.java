@@ -72,7 +72,6 @@ public class PantallaMenu implements Screen {
 
         batch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
-
         // Viewport para mantener aspecto
         viewport = new FitViewport(VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
 
