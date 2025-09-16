@@ -35,11 +35,12 @@ public class PantallaPartida implements Screen {
     private enum EstadoJuego { JUGANDO, PAUSADO, FINALIZADO }
     private EstadoJuego estado = EstadoJuego.JUGANDO;
 
-    // Solo 3 cartas
-    private TextureRegion[] cartasRecortadas = new TextureRegion[3];
+    // Ahora 6 cartas
+    private static final int NUM_CARTAS = 6;
+    private TextureRegion[] cartasRecortadas = new TextureRegion[NUM_CARTAS];
     // Posiciones y arrastre
-    private Vector2[] cartaPos = new Vector2[3];
-    private boolean[] cartaArrastrando = new boolean[3];
+    private Vector2[] cartaPos = new Vector2[NUM_CARTAS];
+    private boolean[] cartaArrastrando = new boolean[NUM_CARTAS];
     private Vector2 arrastreOffset = new Vector2();
     private int cartaSeleccionada = -1;
 
@@ -47,11 +48,11 @@ public class PantallaPartida implements Screen {
     private Sound cartaClickSound;
 
     // Posiciones objetivo para animación
-    private Vector2[] cartaPosObjetivo = new Vector2[3];
+    private Vector2[] cartaPosObjetivo = new Vector2[NUM_CARTAS];
 
     // Físicas para cartas
-    private Vector2[] cartaVel = new Vector2[3];
-    private Vector2[] cartaAcel = new Vector2[3];
+    private Vector2[] cartaVel = new Vector2[NUM_CARTAS];
+    private Vector2[] cartaAcel = new Vector2[NUM_CARTAS];
     private static final float CARTA_REPELENCIA = 42000f; // fuerza de repulsión entre cartas
     private static final float CARTA_DISTANCIA_MIN = 100f; // distancia mínima antes de repeler
 
@@ -62,10 +63,14 @@ public class PantallaPartida implements Screen {
     private Rectangle casillaCartas;
 
     // Estado de cartas jugadas
-    private boolean[] cartaJugada = new boolean[3];
+    private boolean[] cartaJugada = new boolean[NUM_CARTAS];
 
     // Textura para la casilla
     private Texture casillaTexture;
+
+    // Para apilar cartas jugadas en la casilla
+    private int[] ordenJugadas = new int[NUM_CARTAS];
+    private int numCartasJugadas = 0;
 
     public PantallaPartida(Principal game) {
 
@@ -82,7 +87,7 @@ public class PantallaPartida implements Screen {
         fondoPartida= new Texture(Gdx.files.internal("fondos/fondoPartida.png"));
         barajaTexture = new Texture(Gdx.files.internal("sprites/baraja2.png"));
         viewport = new FitViewport(VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
-        recortarTresCartas();
+        recortarSeisCartas();
         inicializarPosicionesCartas();
         cartaClickSound = Gdx.audio.newSound(Gdx.files.internal("sounds/carta.wav"));
         marcoCartaTexture = new Texture(Gdx.files.internal("sprites/marcoCARTA.png"));
@@ -95,35 +100,51 @@ public class PantallaPartida implements Screen {
             casillaW,
             casillaH
         );
-        for (int i = 0; i < 3; i++) cartaJugada[i] = false;
+        numCartasJugadas = 0;
+        for (int i = 0; i < NUM_CARTAS; i++) {
+            cartaJugada[i] = false;
+            ordenJugadas[i] = -1;
+        }
     }
 
-    private void recortarTresCartas() {
+    // Recorta 6 cartas únicas
+    private void recortarSeisCartas() {
         int cartaW = barajaTexture.getWidth() / 11;
         int cartaH = barajaTexture.getHeight() / 4;
-        for (int i = 0; i < 3; i++) {
+        boolean[][] usadas = new boolean[4][11];
+        for (int i = 0; i < NUM_CARTAS; i++) {
             TextureRegion region = null;
+            int fila, col;
             do {
-                int fila = MathUtils.random(0, 3);
-                int col = MathUtils.random(0, 10); // 11 columnas, índice 0-10
-                region = new TextureRegion(barajaTexture, col * cartaW, fila * cartaH, cartaW, cartaH);
-            } while (region == null || region.getRegionWidth() == 0 || region.getRegionHeight() == 0);
+                fila = MathUtils.random(0, 3);
+                col = MathUtils.random(0, 10);
+            } while (usadas[fila][col]);
+            usadas[fila][col] = true;
+            region = new TextureRegion(barajaTexture, col * cartaW, fila * cartaH, cartaW, cartaH);
             cartasRecortadas[i] = region;
         }
     }
 
+    // 3 cartas abajo, 3 arriba
     private void inicializarPosicionesCartas() {
-        int cartaW = 100, cartaH = 150;
-        int espacio = 20;
+        int cartaW = 100, cartaH = 150, espacio = 20;
         int totalW = 3 * cartaW + 2 * espacio;
         int startX = (int)((VIRTUAL_WIDTH - totalW) / 2);
-        int y = 40; // cartas alineadas abajo
+
+        int yAbajo = 40;
+        int yArriba = (int)(VIRTUAL_HEIGHT - cartaH - 40);
+
         for (int i = 0; i < 3; i++) {
-            cartaPos[i] = new Vector2(startX + i * (cartaW + espacio), y);
-            cartaPosObjetivo[i] = new Vector2(cartaPos[i].x, cartaPos[i].y);
-            cartaArrastrando[i] = false;
+            cartaPos[i] = new Vector2(startX + i * (cartaW + espacio), yAbajo);
             cartaVel[i] = new Vector2(0, 0);
             cartaAcel[i] = new Vector2(0, 0);
+            cartaArrastrando[i] = false;
+        }
+        for (int i = 3; i < NUM_CARTAS; i++) {
+            cartaPos[i] = new Vector2(startX + (i-3) * (cartaW + espacio), yArriba);
+            cartaVel[i] = new Vector2(0, 0);
+            cartaAcel[i] = new Vector2(0, 0);
+            cartaArrastrando[i] = false;
         }
     }
 
@@ -139,9 +160,9 @@ public class PantallaPartida implements Screen {
         manejarInput();
 
         // Físicas entre cartas (solo si no están jugadas)
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < NUM_CARTAS; i++) {
             if (cartaArrastrando[i] || cartaJugada[i]) continue;
-            for (int j = 0; j < 3; j++) {
+            for (int j = 0; j < NUM_CARTAS; j++) {
                 if (i == j || cartaArrastrando[j] || cartaJugada[j]) continue;
                 float cartaW = 100, cartaH = 150;
                 Vector2 centroA = new Vector2(cartaPos[i].x + cartaW/2, cartaPos[i].y + cartaH/2);
@@ -175,45 +196,41 @@ public class PantallaPartida implements Screen {
         }
         batch.end();
 
-        int cartaW = 100, cartaH = 150;
-        float radio = 14f;
-
-        // Primero dibuja cartas jugadas en la casilla (al fondo)
+        // Dibuja cartas jugadas en la casilla (apiladas, la última arriba)
         batch.begin();
-        for (int i = 0; i < 3; i++) {
-            if (cartaJugada[i]) {
-                float cx = casillaCartas.x + (casillaCartas.width - cartaW)/2;
-                float cy = casillaCartas.y + (casillaCartas.height - cartaH)/2;
-                batch.end();
-                shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-                shapeRenderer.setColor(1, 1, 1, 1);
-                dibujarRectRedondeado(shapeRenderer, cx, cy, cartaW, cartaH, radio);
-                shapeRenderer.end();
-                batch.begin();
-                batch.draw(cartasRecortadas[i], cx, cy, cartaW, cartaH);
-                if (marcoCartaTexture != null) {
-                    batch.draw(marcoCartaTexture, cx, cy, cartaW, cartaH);
-                }
+        float cartaW = 100, cartaH = 150;
+        float cx = casillaCartas.x + (casillaCartas.width - cartaW)/2;
+        float cy = casillaCartas.y + (casillaCartas.height - cartaH)/2;
+        for (int k = 0; k < numCartasJugadas; k++) {
+            int idx = ordenJugadas[k];
+            batch.end();
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            shapeRenderer.setColor(1, 1, 1, 1);
+            dibujarRectRedondeado(shapeRenderer, cx, cy, cartaW, cartaH, 14f);
+            shapeRenderer.end();
+            batch.begin();
+            batch.draw(cartasRecortadas[idx], cx, cy, cartaW, cartaH);
+            if (marcoCartaTexture != null) {
+                batch.draw(marcoCartaTexture, cx, cy, cartaW, cartaH);
             }
         }
         batch.end();
 
-        // Luego dibuja las cartas no jugadas (por arriba de la casilla)
-        int[] orden = {0, 1, 2};
-        for (int k = 0; k < 3; k++) {
-            int i = orden[k];
-            if (cartaJugada[i]) continue;
+        // Dibuja cartas no jugadas (por arriba de la casilla y apiladas entre sí)
+        for (int k = 0; k < NUM_CARTAS; k++) {
+            if (cartaJugada[k]) continue;
+            float x = cartaPos[k].x, y = cartaPos[k].y;
             shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
             shapeRenderer.setColor(1, 1, 1, 1);
-            dibujarRectRedondeado(shapeRenderer, cartaPos[i].x, cartaPos[i].y, cartaW, cartaH, radio);
+            dibujarRectRedondeado(shapeRenderer, x, y, cartaW, cartaH, 14f);
             shapeRenderer.end();
 
             batch.begin();
-            if (cartasRecortadas[i] != null && cartasRecortadas[i].getRegionWidth() > 0 && cartasRecortadas[i].getRegionHeight() > 0) {
-                batch.draw(cartasRecortadas[i], cartaPos[i].x, cartaPos[i].y, cartaW, cartaH);
+            if (cartasRecortadas[k] != null && cartasRecortadas[k].getRegionWidth() > 0 && cartasRecortadas[k].getRegionHeight() > 0) {
+                batch.draw(cartasRecortadas[k], x, y, cartaW, cartaH);
             }
             if (marcoCartaTexture != null) {
-                batch.draw(marcoCartaTexture, cartaPos[i].x, cartaPos[i].y, cartaW, cartaH);
+                batch.draw(marcoCartaTexture, x, y, cartaW, cartaH);
             }
             batch.end();
         }
@@ -258,8 +275,8 @@ public class PantallaPartida implements Screen {
 
         Vector2 mouse = viewport.unproject(new Vector2(Gdx.input.getX(), Gdx.input.getY()));
         if (Gdx.input.justTouched()) {
-            for (int i = 0; i < 3; i++) {
-                if (cartaJugada[i]) continue; // No se puede arrastrar si ya está jugada
+            for (int i = 0; i < NUM_CARTAS; i++) {
+                if (cartaJugada[i]) continue;
                 int cartaW = 100, cartaH = 150;
                 if (mouse.x >= cartaPos[i].x && mouse.x <= cartaPos[i].x + cartaW &&
                     mouse.y >= cartaPos[i].y && mouse.y <= cartaPos[i].y + cartaH) {
@@ -271,7 +288,6 @@ public class PantallaPartida implements Screen {
                 }
             }
         }
-        // Movimiento directo de la carta arrastrada
         if (Gdx.input.isTouched() && cartaSeleccionada != -1) {
             if (!cartaJugada[cartaSeleccionada]) {
                 cartaPos[cartaSeleccionada].set(mouse.x - arrastreOffset.x, mouse.y - arrastreOffset.y);
@@ -285,12 +301,13 @@ public class PantallaPartida implements Screen {
                 );
                 if (cartaRect.overlaps(casillaCartas)) {
                     cartaJugada[cartaSeleccionada] = true;
-                    // Centra la carta en la casilla
+                    // Apila la carta en la casilla
+                    ordenJugadas[numCartasJugadas] = cartaSeleccionada;
+                    numCartasJugadas++;
                     cartaPos[cartaSeleccionada].set(
                         casillaCartas.x + (casillaCartas.width - cartaW)/2,
                         casillaCartas.y + (casillaCartas.height - cartaH)/2
                     );
-                    // Al colocar en la casilla, desactiva físicas (ya lo hace el render)
                 }
                 cartaArrastrando[cartaSeleccionada] = false;
                 cartaSeleccionada = -1;
@@ -301,7 +318,7 @@ public class PantallaPartida implements Screen {
     // Evita que la carta seleccionada se superponga con las otras
     private void ajustarPosicionCarta(int idx) {
         int cartaW = 100, cartaH = 150;
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < NUM_CARTAS; i++) {
             if (i == idx) continue;
             if (rectsSolapan(cartaPos[idx], cartaPos[i], cartaW, cartaH)) {
                 // Mueve la carta seleccionada a la posición más cercana libre (a la derecha)

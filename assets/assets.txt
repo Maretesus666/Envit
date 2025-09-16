@@ -1,4 +1,5 @@
 fondos/fondo.png
+fondos/fondoMontaña.png
 fondos/fondoOpciones.png
 fondos/fondoPartida.png
 fondos/pepi.png
