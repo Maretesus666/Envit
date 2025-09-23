@@ -16,6 +16,8 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 
 public class PantallaPartida implements Screen {
     private final Principal game;
@@ -68,9 +70,14 @@ public class PantallaPartida implements Screen {
     // Textura para la casilla
     private Texture casillaTexture;
 
-    // Para apilar cartas jugadas en la casilla
-    private int[] ordenJugadas = new int[NUM_CARTAS];
-    private int numCartasJugadas = 0;
+    // Para turnos y apilado
+    private int turno = 0; // 0 = abajo, 1 = arriba
+    private int[] cartasJugadasOrden = new int[NUM_CARTAS]; // guarda el orden de jugada
+    private int cantidadJugadas = 0;
+
+    // Fuente para nombres de cartas
+    private BitmapFont font;
+    private int cartaHover = -1;
 
     public PantallaPartida(Principal game) {
 
@@ -92,6 +99,13 @@ public class PantallaPartida implements Screen {
         cartaClickSound = Gdx.audio.newSound(Gdx.files.internal("sounds/carta.wav"));
         marcoCartaTexture = new Texture(Gdx.files.internal("sprites/marcoCARTA.png"));
         casillaTexture = new Texture(Gdx.files.internal("sprites/casilla.png"));
+        // Usa la misma fuente medieval.ttf que el menú
+        FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("fuentes/medieval.ttf"));
+        FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+        parameter.size = 22;
+        parameter.color = Color.BLACK;
+        font = generator.generateFont(parameter);
+        generator.dispose();
         // Casilla centrada en el medio
         float casillaW = 120, casillaH = 170;
         casillaCartas = new Rectangle(
@@ -100,24 +114,20 @@ public class PantallaPartida implements Screen {
             casillaW,
             casillaH
         );
-        numCartasJugadas = 0;
-        for (int i = 0; i < NUM_CARTAS; i++) {
-            cartaJugada[i] = false;
-            ordenJugadas[i] = -1;
-        }
+        for (int i = 0; i < NUM_CARTAS; i++) cartaJugada[i] = false;
     }
 
-    // Recorta 6 cartas únicas
+    // Recorta 6 cartas únicas (ajustado para 10 columnas: 2,3,4,5,6,7,10,Caballo,Rey,Ancho)
     private void recortarSeisCartas() {
-        int cartaW = barajaTexture.getWidth() / 11;
+        int cartaW = barajaTexture.getWidth() / 10;
         int cartaH = barajaTexture.getHeight() / 4;
-        boolean[][] usadas = new boolean[4][11];
+        boolean[][] usadas = new boolean[4][10];
         for (int i = 0; i < NUM_CARTAS; i++) {
             TextureRegion region = null;
             int fila, col;
             do {
                 fila = MathUtils.random(0, 3);
-                col = MathUtils.random(0, 10);
+                col = MathUtils.random(0, 9);
             } while (usadas[fila][col]);
             usadas[fila][col] = true;
             region = new TextureRegion(barajaTexture, col * cartaW, fila * cartaH, cartaW, cartaH);
@@ -196,13 +206,13 @@ public class PantallaPartida implements Screen {
         }
         batch.end();
 
-        // Dibuja cartas jugadas en la casilla (apiladas, la última arriba)
+        // Dibuja cartas jugadas en la casilla (apiladas en orden de jugada)
         batch.begin();
         float cartaW = 100, cartaH = 150;
-        float cx = casillaCartas.x + (casillaCartas.width - cartaW)/2;
-        float cy = casillaCartas.y + (casillaCartas.height - cartaH)/2;
-        for (int k = 0; k < numCartasJugadas; k++) {
-            int idx = ordenJugadas[k];
+        for (int i = 0; i < cantidadJugadas; i++) {
+            int idx = cartasJugadasOrden[i];
+            float cx = casillaCartas.x + (casillaCartas.width - cartaW)/2;
+            float cy = casillaCartas.y + (casillaCartas.height - cartaH)/2 + i * 10; // apila con desplazamiento vertical
             batch.end();
             shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
             shapeRenderer.setColor(1, 1, 1, 1);
@@ -216,26 +226,51 @@ public class PantallaPartida implements Screen {
         }
         batch.end();
 
-        // Dibuja cartas no jugadas (por arriba de la casilla y apiladas entre sí)
+        // Dibuja cartas no jugadas (por arriba de la casilla)
         for (int k = 0; k < NUM_CARTAS; k++) {
             if (cartaJugada[k]) continue;
-            float x = cartaPos[k].x, y = cartaPos[k].y;
             shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
             shapeRenderer.setColor(1, 1, 1, 1);
-            dibujarRectRedondeado(shapeRenderer, x, y, cartaW, cartaH, 14f);
+            dibujarRectRedondeado(shapeRenderer, cartaPos[k].x, cartaPos[k].y, cartaW, cartaH, 14f);
             shapeRenderer.end();
 
             batch.begin();
             if (cartasRecortadas[k] != null && cartasRecortadas[k].getRegionWidth() > 0 && cartasRecortadas[k].getRegionHeight() > 0) {
-                batch.draw(cartasRecortadas[k], x, y, cartaW, cartaH);
+                batch.draw(cartasRecortadas[k], cartaPos[k].x, cartaPos[k].y, cartaW, cartaH);
             }
             if (marcoCartaTexture != null) {
-                batch.draw(marcoCartaTexture, x, y, cartaW, cartaH);
+                batch.draw(marcoCartaTexture, cartaPos[k].x, cartaPos[k].y, cartaW, cartaH);
             }
             batch.end();
         }
 
-        // Overlay de pausa
+        // Detecta hover
+        Vector2 mouse = viewport.unproject(new Vector2(Gdx.input.getX(), Gdx.input.getY()));
+        cartaHover = -1;
+        cartaW = 100;
+        cartaH = 150;
+        for (int k = 0; k < NUM_CARTAS; k++) {
+            if (cartaJugada[k]) continue;
+            if (mouse.x >= cartaPos[k].x && mouse.x <= cartaPos[k].x + cartaW &&
+                mouse.y >= cartaPos[k].y && mouse.y <= cartaPos[k].y + cartaH) {
+                cartaHover = k;
+                break;
+            }
+        }
+
+        // Dibuja el nombre de la carta en hover
+
+        if (cartaHover != -1) {
+            batch.begin();
+            String nombre = getNombreCarta(cartaHover);
+            font.setColor(Color.BLACK);
+            font.getData().setScale(1.2f);
+            float x = cartaPos[cartaHover].x + cartaW/2 - font.getRegion().getRegionWidth()/5;
+            float y = cartaPos[cartaHover].y + cartaH + 25;
+            font.draw(batch, nombre, x, y);
+            batch.end();
+        }
+
         batch.begin();
         if (estado == EstadoJuego.PAUSADO) {
             batch.setColor(0, 0, 0, 0.5f);
@@ -243,6 +278,25 @@ public class PantallaPartida implements Screen {
             batch.setColor(Color.WHITE);
         }
         batch.end();
+    }
+
+    // Devuelve el nombre de la carta según su fila y columna (nuevo orden)
+    private String getNombreCarta(int idx) {
+        int cartaW = barajaTexture.getWidth() / 10;
+        int cartaH = barajaTexture.getHeight() / 4;
+        TextureRegion region = cartasRecortadas[idx];
+        int col = region.getRegionX() / cartaW;
+        int fila = region.getRegionY() / cartaH;
+        String palo = "";
+        switch (fila) {
+            case 0: palo = "Copas"; break;
+            case 1: palo = "Basto"; break;
+            case 2: palo = "Oro"; break;
+            case 3: palo = "Espadas"; break;
+        }
+        String[] valores = {"2", "3", "4", "5", "6", "7", "10", "Caballo", "Rey", "Ancho"};
+        String valor = (col >= 0 && col < valores.length) ? valores[col] : "?";
+        return valor + " de " + palo;
     }
 
     // Dibuja un rectángulo con esquinas redondeadas
@@ -299,15 +353,22 @@ public class PantallaPartida implements Screen {
                 Rectangle cartaRect = new Rectangle(
                     cartaPos[cartaSeleccionada].x, cartaPos[cartaSeleccionada].y, cartaW, cartaH
                 );
-                if (cartaRect.overlaps(casillaCartas)) {
+                // Solo puede jugar si es su turno
+                boolean puedeJugar = false;
+                if (turno == 0 && cartaSeleccionada < 3) puedeJugar = true;
+                if (turno == 1 && cartaSeleccionada >= 3) puedeJugar = true;
+
+                if (puedeJugar && cartaRect.overlaps(casillaCartas)) {
                     cartaJugada[cartaSeleccionada] = true;
-                    // Apila la carta en la casilla
-                    ordenJugadas[numCartasJugadas] = cartaSeleccionada;
-                    numCartasJugadas++;
+                    // Apila la carta en la casilla, en orden de jugada
+                    cartasJugadasOrden[cantidadJugadas] = cartaSeleccionada;
+                    cantidadJugadas++;
                     cartaPos[cartaSeleccionada].set(
                         casillaCartas.x + (casillaCartas.width - cartaW)/2,
-                        casillaCartas.y + (casillaCartas.height - cartaH)/2
+                        casillaCartas.y + (casillaCartas.height - cartaH)/2 + (cantidadJugadas-1)*10 // apilado
                     );
+                    // Cambia turno
+                    turno = 1 - turno;
                 }
                 cartaArrastrando[cartaSeleccionada] = false;
                 cartaSeleccionada = -1;
@@ -352,6 +413,41 @@ public class PantallaPartida implements Screen {
         return whitePixel;
     }
 
+    // Ranking de Truco argentino por [fila][columna] de la baraja (nuevo orden)
+    // fila: 0=Copas, 1=Basto, 2=Oro, 3=Espadas
+    // columna: 0=2, 1=3, 2=4, 3=5, 4=6, 5=7, 6=10, 7=Caballo, 8=Rey, 9=Ancho
+    private int getRankingTruco(int fila, int col) {
+        // Ancho de Espadas
+        if (fila == 3 && col == 9) return 1;
+        // Ancho de Basto
+        if (fila == 1 && col == 9) return 2;
+        // 7 de Espadas
+        if (fila == 3 && col == 5) return 3;
+        // 7 de Oro
+        if (fila == 2 && col == 5) return 4;
+        // 3
+        if (col == 1) return 5;
+        // 2
+        if (col == 0) return 6;
+        // Ancho de Copas/Oro
+        if ((fila == 0 || fila == 2) && col == 9) return 7;
+        // Rey
+        if (col == 8) return 8;
+        // Caballo
+        if (col == 7) return 9;
+        // 10
+        if (col == 6) return 10;
+        // 7 de Basto/Copas
+        if ((fila == 1 || fila == 0) && col == 5) return 11;
+        // 6
+        if (col == 4) return 12;
+        // 5
+        if (col == 3) return 13;
+        // 4
+        if (col == 2) return 14;
+        return 15; // carta más baja
+    }
+
     @Override
     public void resize(int width, int height) {
         if (viewport != null) {
@@ -379,5 +475,6 @@ public class PantallaPartida implements Screen {
         if (cartaClickSound != null) cartaClickSound.dispose();
         if (marcoCartaTexture != null) marcoCartaTexture.dispose();
         if (casillaTexture != null) casillaTexture.dispose();
+        if (font != null) font.dispose();
     }
 }
