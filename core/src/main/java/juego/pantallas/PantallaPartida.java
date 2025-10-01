@@ -9,14 +9,16 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.math.Rectangle;
-import jdk.internal.org.jline.terminal.TerminalBuilder;
+
+
 import juego.elementos.Mazo;
 import juego.elementos.CartaRenderer;
 import juego.personajes.Jugador;
-import juego.elementos.CartaInput;
+import juego.elementos.ManoManager;
+import juego.utilidades.Animacion;
+
+
 import java.util.ArrayList;
-import com.badlogic.gdx.InputMultiplexer;
 
 public class PantallaPartida implements Screen {
 
@@ -26,23 +28,31 @@ public class PantallaPartida implements Screen {
     private ArrayList<Jugador> jugadores = new ArrayList<Jugador>();
     private SpriteBatch batch = new SpriteBatch();
     private Texture fondoPartida;
+    private Texture mazoSprite;
+    private Texture dorsoCartaSprite;
     private boolean inicioRonda = true;
-    private float cartaX, cartaY, cartaAncho, cartaAlto;
+    private Animacion animacion;
+
     private ShapeRenderer shapeRenderer;
     private OrthographicCamera camera;
     private FitViewport viewport;
     private CartaRenderer cartaRenderer;
-    private CartaInput cartaInput;
+    private ManoManager manoManager;
+
     private final float WORLD_WIDTH = 640;
     private final float WORLD_HEIGHT = 480;
-    private final float CARTA_ANCHO_INICIAL = WORLD_WIDTH * 0.1f;
-    private final float CARTA_ALTO_INICIAL = CARTA_ANCHO_INICIAL * 1.4f;
+
+    // ✅ CONSTANTES DE TAMAÑO DE CARTA
+    private final float CARTA_PROPORCION_ANCHO = 0.1f;
+    private final float CARTA_RELACION_ASPECTO = 1.4f;
+
+    private final float CARTA_ANCHO = WORLD_WIDTH * CARTA_PROPORCION_ANCHO;
+    private final float CARTA_ALTO = CARTA_ANCHO * CARTA_RELACION_ASPECTO;
 
     public PantallaPartida(Game game) {
         this.game = game;
         this.crearJugadores();
     }
-
 
     private void crearJugadores() {
         jugadores.add(new Jugador());
@@ -52,6 +62,8 @@ public class PantallaPartida implements Screen {
     @Override
     public void show() {
         fondoPartida = new Texture(Gdx.files.internal("fondos/fondoPartida.png"));
+        mazoSprite = new Texture(Gdx.files.internal("sprites/mazo_sprite.png"));
+        dorsoCartaSprite = new Texture(Gdx.files.internal("sprites/dorso.png"));
         mazo = new Mazo();
         partida = new Partida();
         camera = new OrthographicCamera();
@@ -59,69 +71,88 @@ public class PantallaPartida implements Screen {
         viewport.apply();
         shapeRenderer = new ShapeRenderer();
         cartaRenderer = new CartaRenderer(batch, shapeRenderer, viewport);
-        // 1. Calcular la posición inicial de la carta
-        float initialX = (WORLD_WIDTH - CARTA_ANCHO_INICIAL) / 2f;
-        float initialY = (WORLD_HEIGHT - CARTA_ALTO_INICIAL) / 2f;
-        // Asignar la posición y el tamaño INICIAL al Rectangle de la carta
-        this.mazo.getCarta(0).updateLimites(initialX, initialY, CARTA_ANCHO_INICIAL, CARTA_ALTO_INICIAL);
-        // 2. Inicializar el procesador de entrada de la carta (para arrastre)
-        cartaInput = new CartaInput(
-                this.mazo.getCarta(0),
+
+        // 1. REPARTIR CARTAS
+
+
+        // 2. INICIALIZAR EL MANAGER DE LA MANO (Pasando el tamaño de la carta)
+        manoManager = new ManoManager(
+                jugadores.get(0),
+                cartaRenderer,
                 viewport,
-                CARTA_ANCHO_INICIAL,
-                CARTA_ALTO_INICIAL
+                WORLD_WIDTH,
+                WORLD_HEIGHT,
+                CARTA_ANCHO,
+                CARTA_ALTO
         );
-        InputMultiplexer multiplexer = new InputMultiplexer();
-        multiplexer.addProcessor(cartaInput);
-        Gdx.input.setInputProcessor(multiplexer);
+        animacion = new Animacion(
+                WORLD_WIDTH,
+                WORLD_HEIGHT,
+                CARTA_ANCHO,
+                CARTA_ALTO,
+                dorsoCartaSprite,
+                manoManager
+        );
+
+        // 3. Posicionar todas las cartas y configurar el arrastre
+
+        // 4. Asignar el InputMultiplexer del Manager
+        Gdx.input.setInputProcessor(manoManager.getInputMultiplexer());
+
         resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     }
 
     @Override
     public void render(float delta) {
-        update();
-
+        update(delta);
         Gdx.gl.glClearColor(0, 0.1f, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-        Rectangle limitesCarta = this.mazo.getCarta(0).getLimites();
-        // 1. DIBUJAR FONDO DEL TABLERO
+
+        // 1. DIBUJAR FONDO Y MAZO
         this.batch.setProjectionMatrix(viewport.getCamera().combined);
         this.batch.begin();
         batch.draw(fondoPartida, 0, 0, WORLD_WIDTH, WORLD_HEIGHT);
+
+        // --- DIBUJAR EL MAZO USANDO LAS CONSTANTES DE LA CARTA ---
+
+        // El mazo tiene el mismo tamaño que una carta
+        float mazoAncho = CARTA_ANCHO;
+        float mazoAlto = CARTA_ALTO;
+
+        // Posición: Medio a la derecha (Margen del 5% del ancho del mundo)
+        float margenHorizontal = WORLD_WIDTH * 0.05f;
+        float mazoX = WORLD_WIDTH - mazoAncho - margenHorizontal;
+        float mazoY = (WORLD_HEIGHT - mazoAlto) / 2f;
+        animacion.render(batch);
+        batch.draw(mazoSprite, mazoX, mazoY, mazoAncho, mazoAlto);
+
+
         this.batch.end();
 
-        // 2. DIBUJAR LA CARTA (DELEGADO AL RENDERER)
+        // 2. DIBUJAR LAS CARTAS (DELEGADO AL MANAGER)
         this.batch.setProjectionMatrix(viewport.getCamera().combined);
-
-        cartaRenderer.render(
-                this.jugadores.get(0).getMano()[0],
-                limitesCarta.x,
-                limitesCarta.y,
-                limitesCarta.width,
-                limitesCarta.height
-        );
-
+        manoManager.render();
     }
 
-    public void update(){
-        if(this.inicioRonda){
+    public void update(float delta){
+        animacion.update(delta);
+
+        // Desactiva el estado 'inicioRonda' cuando la animación termina
+        if (inicioRonda) {
             this.partida.repartirCartas(jugadores.get(0), jugadores.get(1));
-            this.inicioRonda = false;
-            System.out.println("Carta:" + this.jugadores.get(0).getMano()[0].getNombre());
+            for(int i = 0; i < 3; i++) {
+                System.out.println("Partida iniciada. Carta del Jugador: " + this.jugadores.get(0).getMano()[i].getNombre());
+            }
+            manoManager.inicializarMano();
+            animacion.iniciarAnimacionReparto();
+            inicioRonda = false;
         }
     }
-
 
     @Override
     public void resize(int width, int height) {
         System.out.println("Se ha redimensionado la pantalla a: " + width + "x" + height);
         viewport.update(width, height, true);
-        float worldWidth = viewport.getWorldWidth();
-        float worldHeight = viewport.getWorldHeight();
-        cartaAncho = worldWidth * 0.1f;
-        cartaAlto = cartaAncho * 1.4f;
-        cartaX = (worldWidth - cartaAncho) / 2f;
-        cartaY = (worldHeight - cartaAlto) / 2f;
     }
 
 
@@ -137,6 +168,7 @@ public class PantallaPartida implements Screen {
     @Override
     public void dispose() {
         if (fondoPartida != null) fondoPartida.dispose();
+        if (mazoSprite != null) mazoSprite.dispose();
         if (batch != null) batch.dispose();
         if (shapeRenderer != null) shapeRenderer.dispose();
     }
