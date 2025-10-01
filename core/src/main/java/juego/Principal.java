@@ -1,8 +1,8 @@
-package com.Envit.Juego;
+package juego;
 
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.Envit.Juego.pantallas.PantallaMenu;
+import juego.pantallas.PantallaMenu;
 
 public class Principal extends Game {
 

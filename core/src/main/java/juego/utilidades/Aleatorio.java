@@ -1,4 +1,4 @@
-package com.Envit.Juego.utilidades;
+package juego.utilidades;
 
 import java.util.Random;
 

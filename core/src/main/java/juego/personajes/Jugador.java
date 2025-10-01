@@ -1,8 +1,8 @@
-package com.Envit.Juego.personajes;
+package juego.personajes;
 
-import com.Envit.Juego.elementos.Carta;
+import juego.elementos.Carta;
 
- public class Jugador {
+public class Jugador {
 	private String nombre;
 	private int puntos;
 	private Carta mano[] = new Carta[3];
