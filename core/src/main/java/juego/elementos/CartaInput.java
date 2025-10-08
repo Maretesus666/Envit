@@ -12,17 +12,14 @@ public class CartaInput implements InputProcessor {
     private final float cartaAncho;
     private final float cartaAlto;
 
-    // ✅ NUEVO: Referencia a la zona de juego
     private ZonaJuego zonaJuego;
 
-    // ✅ NUEVO: Posición original de la carta (para devolverla si no es válida)
     private float posicionOriginalX;
     private float posicionOriginalY;
 
     private boolean isDragging = false;
     private final Vector3 touchPoint = new Vector3();
 
-    // ✅ NUEVO: Flag para saber si esta carta ya fue jugada
     private boolean cartaJugada = false;
 
     private float dragOffsetX;
@@ -42,7 +39,6 @@ public class CartaInput implements InputProcessor {
 
     @Override
     public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-        // ✅ Si la carta ya fue jugada, no se puede mover
         if (cartaJugada) {
             return false;
         }
@@ -55,7 +51,6 @@ public class CartaInput implements InputProcessor {
         if (limitesCarta.contains(touchPoint.x, touchPoint.y)) {
             isDragging = true;
 
-            // ✅ Guardar la posición original
             posicionOriginalX = limitesCarta.x;
             posicionOriginalY = limitesCarta.y;
 
@@ -92,7 +87,7 @@ public class CartaInput implements InputProcessor {
             if (zonaJuego != null && zonaJuego.contieneCarta(cartaParaMover)) {
                 // La carta está en la zona válida
                 zonaJuego.agregarCarta(cartaParaMover);
-                cartaJugada = true; // ✅ Marcar como jugada
+                cartaJugada = true;
 
                 System.out.println("Carta jugada: " + cartaParaMover.getNombre());
             } else {

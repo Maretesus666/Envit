@@ -153,10 +153,6 @@ public class Partida {
             System.out.println("  - " + c.getNombre() + " (Jerarquía: " + c.getJerarquia() + ")");
         }
 
-        // ✅ NUEVO: Lógica simple de puntos (comparar jerarquías)
-        // En el truco real es más complejo (mejor de 3 manos), pero esto es para probar
-        int manosGanadasJugador = 0;
-        int manosGanadasRival = 0;
 
         for (int i = 0; i < Math.min(cartasJug.size(), cartasRiv.size()); i++) {
             Carta cartaJug = cartasJug.get(i);
@@ -179,10 +175,10 @@ public class Partida {
         // Determinar ganador (simple: quien ganó más manos)
         Jugador ganador = null;
         if (jugadorHumano.getPuntos() > jugadorRival.getPuntos()) {
-            ganador = obtenerJugadorHumano();
+            ganador = jugadorHumano;
             System.out.println("¡GANÓ EL JUGADOR!");
         } else if (jugadorRival.getPuntos() > jugadorHumano.getPuntos()) {
-            ganador = obtenerJugadorRival();
+            ganador = jugadorRival;
             System.out.println("¡GANÓ EL RIVAL!");
         }
 
@@ -191,18 +187,6 @@ public class Partida {
             ganador.sumarPuntos(1);
             System.out.println(ganador.getNombre() + " suma 1 punto. Total: " + ganador.getPuntos());
         }
-    }
-
-    // ✅ NUEVO: Helpers para obtener los jugadores
-    private Jugador obtenerJugadorHumano() {
-        // Asumimos que el jugador humano es el que tiene la zona "zonaJugador"
-        // (esto lo manejás mejor pasando referencias, pero para simplicidad...)
-        // Por ahora retornamos null, lo arreglamos en PantallaPartida
-        return null;
-    }
-
-    private Jugador obtenerJugadorRival() {
-        return null;
     }
 
     // ✅ NUEVO: Método para saber si es el turno del jugador
