@@ -6,17 +6,16 @@ import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 
-
-import juego.elementos.Mazo;
-import juego.elementos.CartaRenderer;
+import juego.elementos.*;
+import juego.elementos.Hud;  // ✅ NUEVO
 import juego.personajes.Jugador;
-import juego.elementos.ManoManager;
-import juego.elementos.Animacion;
-
+import juego.personajes.RivalBot;
 
 import java.util.ArrayList;
 
@@ -39,24 +38,36 @@ public class PantallaPartida implements Screen {
     private CartaRenderer cartaRenderer;
     private ManoManager manoManager;
 
+    private RivalBot rivalBot;
+    private ManoRivalRenderer manoRivalRenderer;
+    private ZonaJuego zonaJuegoRival;
+    private ZonaJuego zonaJuegoJugador;
+
+    // ✅ NUEVO: HUD para mostrar puntos
+    private Hud hud;
+    private BitmapFont font;
+
     private final float WORLD_WIDTH = 640;
     private final float WORLD_HEIGHT = 480;
 
-    // ✅ CONSTANTES DE TAMAÑO DE CARTA
     private final float CARTA_PROPORCION_ANCHO = 0.1f;
     private final float CARTA_RELACION_ASPECTO = 1.4f;
 
     private final float CARTA_ANCHO = WORLD_WIDTH * CARTA_PROPORCION_ANCHO;
     private final float CARTA_ALTO = CARTA_ANCHO * CARTA_RELACION_ASPECTO;
-
+    private int mano;
     public PantallaPartida(Game game) {
         this.game = game;
         this.crearJugadores();
     }
 
     private void crearJugadores() {
-        jugadores.add(new Jugador());
-        jugadores.add(new Jugador());
+        Jugador jugador = new Jugador("Tú");
+        Jugador rival = new Jugador("Rival");
+
+
+        jugadores.add(jugador);
+        jugadores.add(rival);
     }
 
     @Override
@@ -72,10 +83,25 @@ public class PantallaPartida implements Screen {
         shapeRenderer = new ShapeRenderer();
         cartaRenderer = new CartaRenderer(batch, shapeRenderer, viewport);
 
-        // 1. REPARTIR CARTAS
+        // ✅ NUEVO: Inicializar fuente y HUD
+        font = new BitmapFont();
+        font.getData().setScale(1.2f);
+        hud = new Hud(font, jugadores.get(0), jugadores.get(1), WORLD_WIDTH, WORLD_HEIGHT);
 
+        // Crear las dos zonas de juego
+        float zonaAncho = CARTA_ANCHO * 1.5f;
+        float zonaAlto = CARTA_ALTO * 1.8f;
 
-        // 2. INICIALIZAR EL MANAGER DE LA MANO (Pasando el tamaño de la carta)
+        float zonaJugadorX = (WORLD_WIDTH - zonaAncho) / 2f;
+        float zonaJugadorY = (WORLD_HEIGHT / 2f) - zonaAlto - 20;
+        zonaJuegoJugador = new ZonaJuego(zonaJugadorX, zonaJugadorY, zonaAncho, zonaAlto);
+        zonaJuegoJugador.setCartaRenderer(cartaRenderer);
+
+        float zonaRivalX = (WORLD_WIDTH - zonaAncho) / 2f;
+        float zonaRivalY = (WORLD_HEIGHT / 2f) + 20;
+        zonaJuegoRival = new ZonaJuego(zonaRivalX, zonaRivalY, zonaAncho, zonaAlto);
+        zonaJuegoRival.setCartaRenderer(cartaRenderer);
+
         manoManager = new ManoManager(
                 jugadores.get(0),
                 cartaRenderer,
@@ -85,6 +111,22 @@ public class PantallaPartida implements Screen {
                 CARTA_ANCHO,
                 CARTA_ALTO
         );
+        manoManager.setZonaJuego(zonaJuegoJugador);
+
+        rivalBot = new RivalBot(jugadores.get(1), zonaJuegoRival);
+        rivalBot.setDelay(1.5f);
+
+        manoRivalRenderer = new ManoRivalRenderer(
+                jugadores.get(1),
+                cartaRenderer,
+                dorsoCartaSprite,
+                zonaJuegoRival,
+                WORLD_WIDTH,
+                WORLD_HEIGHT,
+                CARTA_ANCHO,
+                CARTA_ALTO
+        );
+
         animacion = new Animacion(
                 WORLD_WIDTH,
                 WORLD_HEIGHT,
@@ -94,9 +136,9 @@ public class PantallaPartida implements Screen {
                 manoManager
         );
 
-        // 3. Posicionar todas las cartas y configurar el arrastre
+        partida.inicializar(zonaJuegoJugador, zonaJuegoRival, rivalBot,
+                jugadores.get(0), jugadores.get(1), mano);  // ✅ Pasamos los jugadores
 
-        // 4. Asignar el InputMultiplexer del Manager
         Gdx.input.setInputProcessor(manoManager.getInputMultiplexer());
 
         resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
@@ -113,39 +155,69 @@ public class PantallaPartida implements Screen {
         this.batch.begin();
         batch.draw(fondoPartida, 0, 0, WORLD_WIDTH, WORLD_HEIGHT);
 
-        // --- DIBUJAR EL MAZO USANDO LAS CONSTANTES DE LA CARTA ---
-
-        // El mazo tiene el mismo tamaño que una carta
         float mazoAncho = CARTA_ANCHO;
         float mazoAlto = CARTA_ALTO;
-
-        // Posición: Medio a la derecha (Margen del 5% del ancho del mundo)
         float margenHorizontal = WORLD_WIDTH * 0.05f;
         float mazoX = WORLD_WIDTH - mazoAncho - margenHorizontal;
         float mazoY = (WORLD_HEIGHT - mazoAlto) / 2f;
+
         animacion.render(batch);
         batch.draw(mazoSprite, mazoX, mazoY, mazoAncho, mazoAlto);
 
-
         this.batch.end();
 
-        // 2. DIBUJAR LAS CARTAS (DELEGADO AL MANAGER)
+        // 2. DIBUJAR LOS FONDOS DE LAS ZONAS DE JUEGO
+        zonaJuegoJugador.renderFondo(shapeRenderer);
+        zonaJuegoRival.renderFondo(shapeRenderer);
+
+        // 3. DIBUJAR LAS CARTAS EN MANO
         this.batch.setProjectionMatrix(viewport.getCamera().combined);
+
+        this.batch.begin();
+        manoRivalRenderer.render(batch);
+        this.batch.end();
+
         manoManager.render();
+
+        // 4. DIBUJAR LAS CARTAS DENTRO DE LAS ZONAS (jugadas)
+        zonaJuegoJugador.renderCartas();
+        zonaJuegoRival.renderCartas();
+
+        this.batch.setProjectionMatrix(viewport.getCamera().combined);
+        hud.render(batch, partida.getManoActual(), partida.esTurnoJugador());
     }
 
     public void update(float delta){
         animacion.update(delta);
 
-        // Desactiva el estado 'inicioRonda' cuando la animación termina
         if (inicioRonda) {
             this.partida.repartirCartas(jugadores.get(0), jugadores.get(1));
+
+            System.out.println("=== NUEVA RONDA ===");
+            System.out.println("Cartas del jugador:");
             for(int i = 0; i < 3; i++) {
-                System.out.println("Partida iniciada. Carta del Jugador: " + this.jugadores.get(0).getMano()[i].getNombre());
+                System.out.println("  - " + this.jugadores.get(0).getMano()[i].getNombre());
             }
+
+            System.out.println("Cartas del rival:");
+            for(int i = 0; i < 3; i++) {
+                System.out.println("  - " + this.jugadores.get(1).getMano()[i].getNombre());
+            }
+
             manoManager.inicializarMano();
+            manoRivalRenderer.inicializarPosiciones();
             animacion.iniciarAnimacionReparto();
+
             inicioRonda = false;
+        }
+        if(mano > 2){
+            inicioRonda=true;
+            partida.nuevaRonda();
+        }
+        partida.update(delta);
+
+        if (partida.rondaTerminada()) {
+            // Aquí podrías mostrar un botón "SIGUIENTE RONDA"
         }
     }
 
@@ -154,7 +226,6 @@ public class PantallaPartida implements Screen {
         System.out.println("Se ha redimensionado la pantalla a: " + width + "x" + height);
         viewport.update(width, height, true);
     }
-
 
     @Override
     public void pause() {}
@@ -171,5 +242,6 @@ public class PantallaPartida implements Screen {
         if (mazoSprite != null) mazoSprite.dispose();
         if (batch != null) batch.dispose();
         if (shapeRenderer != null) shapeRenderer.dispose();
+        if (font != null) font.dispose();  // ✅ NUEVO
     }
 }

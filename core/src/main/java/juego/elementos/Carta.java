@@ -5,9 +5,10 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Rectangle;
+
 public class Carta {
 
-    private static final Texture barajaTexture = new Texture(Gdx.files.internal("sprites/baraja2.png"));;
+    private static final Texture barajaTexture = new Texture(Gdx.files.internal("sprites/baraja2.png"));
     private int valor;
     private Palo palo;
     private int jerarquia;
@@ -17,7 +18,7 @@ public class Carta {
     public Carta(int valor, Palo palo) {
         this.valor = valor;
         this.palo = palo;
-        this.asignarPeso(valor,palo);
+        this.asignarPeso(valor, palo);  // ✅ Esto ahora SÍ asigna
 
         int cartaW = barajaTexture.getWidth() / 10;
         int cartaH = barajaTexture.getHeight() / 4;
@@ -32,25 +33,22 @@ public class Carta {
             colIndex = 0;
         }
 
-
         int rowIndex;
         if (palo == Palo.COPAS) {
-            rowIndex = 0; // Primera fila
+            rowIndex = 0;
         } else if (palo == Palo.BASTO) {
-            rowIndex = 1; // Segunda fila
+            rowIndex = 1;
         } else if (palo == Palo.ORO) {
-            rowIndex = 2; // Tercera fila
+            rowIndex = 2;
         } else if (palo == Palo.ESPADAS) {
-            rowIndex = 3; // Cuarta fila
+            rowIndex = 3;
         } else {
-            rowIndex = 0; // Valor por defecto, aunque no debería usarse
+            rowIndex = 0;
         }
 
-        // 3. CALCULAR COORDENADAS DE PIXEL
         int startX = colIndex * cartaW;
         int startY = rowIndex * cartaH;
 
-        // 4. CREAR LA TEXTURE REGION
         this.region = new TextureRegion(
                 barajaTexture,
                 startX,
@@ -62,7 +60,7 @@ public class Carta {
         this.limites = new Rectangle(0, 0, cartaW, cartaH);
     }
 
-    Carta( int valor, Palo palo, int jerarquia) {
+    Carta(int valor, Palo palo, int jerarquia) {
         this.valor = valor;
         this.palo = palo;
         this.jerarquia = jerarquia;
@@ -72,42 +70,94 @@ public class Carta {
         batch.draw(this.region, x, y, width, height);
     }
 
-    private int asignarPeso(int valor, Palo palo) {
-        // La jerarquía se define de mayor a menor peso (1 es el más alto)
-
+    // ✅ CORREGIDO: Ahora SÍ asigna this.jerarquia
+    private void asignarPeso(int valor, Palo palo) {
         // 1. ANCHOS Y SIETES ESPECIALES
-        if (valor == 1 && palo == Palo.ESPADAS) return 1;  // Ancho de Espadas: 1
-        if (valor == 1 && palo == Palo.BASTO) return 2;   // Ancho de Basto: 2
-        if (valor == 7 && palo == Palo.ESPADAS) return 3;  // Siete de Espadas: 3
-        if (valor == 7 && palo == Palo.ORO) return 4;     // Siete de Oro: 4
+        if (valor == 1 && palo == Palo.ESPADAS) {
+            this.jerarquia = 1;
+            return;
+        }
+        if (valor == 1 && palo == Palo.BASTO) {
+            this.jerarquia = 2;
+            return;
+        }
+        if (valor == 7 && palo == Palo.ESPADAS) {
+            this.jerarquia = 3;
+            return;
+        }
+        if (valor == 7 && palo == Palo.ORO) {
+            this.jerarquia = 4;
+            return;
+        }
 
         // 2. TRES Y DOS
-        if (valor == 3) return 5;                         // 3: 5
-        if (valor == 2) return 6;                         // 2: 6
+        if (valor == 3) {
+            this.jerarquia = 5;
+            return;
+        }
+        if (valor == 2) {
+            this.jerarquia = 6;
+            return;
+        }
 
         // 3. ANCHOS COMUNES
-        if (valor == 1) return 7;                         // Ancho de Copa/Oro: 7
+        if (valor == 1) {
+            this.jerarquia = 7;
+            return;
+        }
 
-        // 4. CARTAS NEGRAS (10, 11, 12, que asumo son Sota, Caballo, Rey)
-        // Nota: Asumo que 10=Sota, 11=Caballo, 12=Rey, y que tu loop en Mazo
-        // genera valores de 1 a 12 (excluyendo 8 y 9). Ajusta los valores
-        // a 12/11/10 si usas Sota/Caballo/Rey como 10/11/12.
-
-        // Si valor va de 1 a 12, y 10, 11, 12 son las "figuras":
-        if (valor == 12) return 8; // Rey: 8
-        if (valor == 11) return 9; // Caballo: 9
-        if (valor == 10) return 10; // Sota (o 10): 10
+        // 4. CARTAS NEGRAS
+        if (valor == 12) {
+            this.jerarquia = 8;
+            return;
+        }
+        if (valor == 11) {
+            this.jerarquia = 9;
+            return;
+        }
+        if (valor == 10) {
+            this.jerarquia = 10;
+            return;
+        }
 
         // 5. SIETES COMUNES
-        if (valor == 7) return 11; // 7 de Basto/Copa: 11
+        if (valor == 7) {
+            this.jerarquia = 11;
+            return;
+        }
 
-        // 6. CARTAS MEDIAS (6, 5, 4)
-        if (valor == 6) return 12; // 6: 12
-        if (valor == 5) return 13; // 5: 13
-        if (valor == 4) return 14; // 4: 14 (El de menor peso)
+        // 6. CARTAS MEDIAS
+        if (valor == 6) {
+            this.jerarquia = 12;
+            return;
+        }
+        if (valor == 5) {
+            this.jerarquia = 13;
+            return;
+        }
+        if (valor == 4) {
+            this.jerarquia = 14;
+            return;
+        }
 
-        // Si por alguna razón llega aquí (no debería con tu Mazo), devolvemos -1 o lanzamos error
-        return -1;
+        // Fallback
+        this.jerarquia = 15;
+    }
+
+    // ✅ NUEVO: equals y hashCode para comparar cartas correctamente
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        Carta carta = (Carta) obj;
+        return valor == carta.valor && palo == carta.palo;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = valor;
+        result = 31 * result + (palo != null ? palo.hashCode() : 0);
+        return result;
     }
 
     public void updateLimites(float x, float y, float width, float height) {
@@ -117,11 +167,20 @@ public class Carta {
     public int getJerarquia() {
         return jerarquia;
     }
+
     public String getNombre() {
         return valor + " de " + palo;
     }
 
     public Rectangle getLimites() {
         return limites;
+    }
+
+    public int getValor() {
+        return valor;
+    }
+
+    public Palo getPalo() {
+        return palo;
     }
 }
