@@ -15,7 +15,7 @@ import juego.elementos.Mazo;
 import juego.elementos.CartaRenderer;
 import juego.personajes.Jugador;
 import juego.elementos.ManoManager;
-import juego.utilidades.Animacion;
+import juego.elementos.Animacion;
 
 
 import java.util.ArrayList;
