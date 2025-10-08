@@ -216,9 +216,6 @@ public class PantallaPartida implements Screen {
         }
         partida.update(delta);
 
-        if (partida.rondaTerminada()) {
-            // Aquí podrías mostrar un botón "SIGUIENTE RONDA"
-        }
     }
 
     @Override

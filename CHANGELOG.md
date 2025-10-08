@@ -3,6 +3,17 @@
 Todos los cambios relevantes de este proyecto se documentarán aquí.  
 
 ---
+
+## [0.1.5] - 2025-08-01
+### Added
+- Se optimizó el código
+- Se agregó un HUD
+- Se implementó la logica de tirar cartas
+- Se implementó la logica de turnos
+- Se agregó una animación al repartir las cartas del jugador
+- Se agregó un rival bot para simular una partida real
+- Se implementó el sistema de puntos
+
 ## [0.1.4] - 2025-08-01
 ### Added
 - Se agregó la clase pantallaMenu
