@@ -22,11 +22,12 @@ public class Partida {
     private RivalBot rivalBot;
     private Jugador jugadorHumano;
     private Jugador jugadorRival;;
-    private float delayFinalizacion = 0;
-    private boolean esperandoFinalizacion = false;
 
     private int cartasJugadorAntes = 0;
     private int cartasRivalAntes = 0;
+
+    private float delayFinalizacion = 0;
+    private boolean esperandoFinalizacion = false;
 
     private int manoActual = 0;
     private final int MAX_MANOS = 3;
@@ -104,7 +105,9 @@ public class Partida {
                 esperandoFinalizacion = false;
                 delayFinalizacion = 0;
             }
-            return; // no procesar nada más durante el delay
+            else {
+                return; // no procesar nada más durante el delay
+            }
         }
 
         // Gestionar turnos
@@ -144,7 +147,6 @@ public class Partida {
 
             case FINALIZANDO_MANO:
                 evaluarRonda();
-                finalizarRonda(jugadorHumano, jugadorRival);
                 break;
         }
     }

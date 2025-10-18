@@ -94,14 +94,14 @@ public class Hud {
      * Dibuja la información de la mano actual
      */
     private void dibujarInfoMano(SpriteBatch batch, int manoActual) {
-        if (manoActual <= 0 || manoActual > 3) {
+        if (manoActual < 0 || manoActual > 2) {
             return; // No mostrar si no hay mano en curso
         }
 
         font.setColor(colorNeutral);
         font.getData().setScale(1.2f);
 
-        String textoMano = "MANO " + manoActual + "/3";
+        String textoMano = "MANO " + (manoActual +1) + "/3";
 
         // Arriba centro
         com.badlogic.gdx.graphics.g2d.GlyphLayout layout =
@@ -162,36 +162,6 @@ public class Hud {
         batch.end();
     }
 
-    /**
-     * Dibuja un panel con fondo semi-transparente (para los puntos)
-     */
-    public void dibujarPanelConFondo(ShapeRenderer shapeRenderer, SpriteBatch batch,
-                                     float x, float y, float ancho, float alto,
-                                     String texto, Color colorTexto) {
-        // Fondo semi-transparente
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        shapeRenderer.setColor(0, 0, 0, 0.5f);
-        shapeRenderer.rect(x, y, ancho, alto);
-        shapeRenderer.end();
 
-        // Borde
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-        shapeRenderer.setColor(colorTexto);
-        shapeRenderer.rect(x, y, ancho, alto);
-        shapeRenderer.end();
 
-        // Texto
-        batch.begin();
-        font.setColor(colorTexto);
-        font.getData().setScale(1.2f);
-
-        com.badlogic.gdx.graphics.g2d.GlyphLayout layout =
-                new com.badlogic.gdx.graphics.g2d.GlyphLayout(font, texto);
-
-        float textX = x + (ancho - layout.width) / 2f;
-        float textY = y + (alto + layout.height) / 2f;
-
-        font.draw(batch, texto, textX, textY);
-        batch.end();
-    }
 }
