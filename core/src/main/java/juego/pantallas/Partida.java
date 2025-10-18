@@ -1,8 +1,10 @@
 package juego.pantallas;
 
+import com.badlogic.gdx.Gdx;
 import juego.elementos.*;
 import juego.personajes.Jugador;
 import juego.personajes.RivalBot;
+import juego.utilidades.Consola;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,7 +14,7 @@ public class Partida {
     private ArrayList<Carta> mazoRevuelto = new ArrayList<>();
     private int indiceMazo = 0;
 
-    private enum EstadoTurno { ESPERANDO_JUGADOR, ESPERANDO_RIVAL, EVALUANDO_MANO }
+    private enum EstadoTurno { ESPERANDO_JUGADOR, ESPERANDO_RIVAL, FINALIZANDO_MANO }
     private EstadoTurno estadoActual = EstadoTurno.ESPERANDO_JUGADOR;
 
     private ZonaJuego zonaJugador;
@@ -20,7 +22,8 @@ public class Partida {
     private RivalBot rivalBot;
     private Jugador jugadorHumano;
     private Jugador jugadorRival;;
-
+    private float delayFinalizacion = 0;
+    private boolean esperandoFinalizacion = false;
 
     private int cartasJugadorAntes = 0;
     private int cartasRivalAntes = 0;
@@ -69,6 +72,7 @@ public class Partida {
         cartasJugadorAntes = 0;
         cartasRivalAntes = 0;
         manoActual = 0;
+        repartirCartas(jugador1, jugador2);
     }
 
     public void repartirCartas(Jugador jugador1, Jugador jugador2) {
@@ -92,10 +96,20 @@ public class Partida {
         // Actualizar el bot
         rivalBot.update(delta);
 
+        // Si estamos esperando que se vea la última carta antes de finalizar
+        if (esperandoFinalizacion) {
+            delayFinalizacion += delta;
+            if (delayFinalizacion >= 1.5f) { // esperar 1.5 segundos aprox.
+                estadoActual = EstadoTurno.FINALIZANDO_MANO;
+                esperandoFinalizacion = false;
+                delayFinalizacion = 0;
+            }
+            return; // no procesar nada más durante el delay
+        }
+
         // Gestionar turnos
         switch (estadoActual) {
             case ESPERANDO_JUGADOR:
-
                 int cartasJugadorActual = zonaJugador.getCantidadCartas();
 
                 if (cartasJugadorActual > cartasJugadorAntes) {
@@ -117,10 +131,10 @@ public class Partida {
                         cartasRivalAntes = cartasRivalActual;
                         manoActual++;
 
-                        // Verificar si se completaron las 3 manos
                         if (manoActual >= MAX_MANOS) {
-                            estadoActual = EstadoTurno.EVALUANDO_MANO;
-                            evaluarRonda();
+                            // Esperar un momento para mostrar la última carta
+                            esperandoFinalizacion = true;
+                            delayFinalizacion = 0;
                         } else {
                             estadoActual = EstadoTurno.ESPERANDO_JUGADOR;
                         }
@@ -128,8 +142,9 @@ public class Partida {
                 }
                 break;
 
-            case EVALUANDO_MANO:
-                // Por ahora solo esperamos (aquí iría la lógica de comparación)
+            case FINALIZANDO_MANO:
+                evaluarRonda();
+                finalizarRonda(jugadorHumano, jugadorRival);
                 break;
         }
     }
@@ -172,21 +187,8 @@ public class Partida {
 
         System.out.println("\nResultado: Jugador " + jugadorHumano.getPuntos() + " - " + jugadorRival.getPuntos() + " Rival");
 
-        // Determinar ganador (simple: quien ganó más manos)
-        Jugador ganador = null;
-        if (jugadorHumano.getPuntos() > jugadorRival.getPuntos()) {
-            ganador = jugadorHumano;
-            System.out.println("¡GANÓ EL JUGADOR!");
-        } else if (jugadorRival.getPuntos() > jugadorHumano.getPuntos()) {
-            ganador = jugadorRival;
-            System.out.println("¡GANÓ EL RIVAL!");
-        }
 
-        // ✅ Sumar puntos (1 punto por ronda ganada, por ahora)
-        if (ganador != null) {
-            ganador.sumarPuntos(1);
-            System.out.println(ganador.getNombre() + " suma 1 punto. Total: " + ganador.getPuntos());
-        }
+
     }
 
     // ✅ NUEVO: Método para saber si es el turno del jugador
@@ -201,7 +203,7 @@ public class Partida {
 
     // ✅ NUEVO: Método para saber si la ronda terminó
     public boolean rondaTerminada() {
-        return estadoActual == EstadoTurno.EVALUANDO_MANO;
+        return estadoActual == EstadoTurno.FINALIZANDO_MANO;
     }
 
     // ✅ NUEVO: Método para iniciar una nueva ronda

@@ -90,10 +90,10 @@ public class PantallaPartida implements Screen {
 
         // Crear las dos zonas de juego
         float zonaAncho = CARTA_ANCHO * 1.5f;
-        float zonaAlto = CARTA_ALTO * 1.8f;
+        float zonaAlto = CARTA_ALTO * 1.3f;
 
         float zonaJugadorX = (WORLD_WIDTH - zonaAncho) / 2f;
-        float zonaJugadorY = (WORLD_HEIGHT / 2f) - zonaAlto - 20;
+        float zonaJugadorY = (WORLD_HEIGHT / 2f) - zonaAlto;
         zonaJuegoJugador = new ZonaJuego(zonaJugadorX, zonaJugadorY, zonaAncho, zonaAlto);
         zonaJuegoJugador.setCartaRenderer(cartaRenderer);
 
@@ -187,22 +187,23 @@ public class PantallaPartida implements Screen {
         hud.render(batch, partida.getManoActual(), partida.esTurnoJugador());
     }
 
-    public void update(float delta){
+    public void update(float delta) {
         animacion.update(delta);
+        partida.update(delta);
+
+        // Si la partida está lista para nueva ronda
+        if (partida.rondaTerminada()) {
+            inicioRonda = true;
+            partida.nuevaRonda();
+        }
 
         if (inicioRonda) {
-            this.partida.repartirCartas(jugadores.get(0), jugadores.get(1));
+            zonaJuegoJugador.limpiar();
+            zonaJuegoRival.limpiar();
+            jugadores.get(0).limpiarMazo();
+            jugadores.get(1).limpiarMazo();
 
-            System.out.println("=== NUEVA RONDA ===");
-            System.out.println("Cartas del jugador:");
-            for(int i = 0; i < 3; i++) {
-                System.out.println("  - " + this.jugadores.get(0).getMano()[i].getNombre());
-            }
-
-            System.out.println("Cartas del rival:");
-            for(int i = 0; i < 3; i++) {
-                System.out.println("  - " + this.jugadores.get(1).getMano()[i].getNombre());
-            }
+            partida.repartirCartas(jugadores.get(0), jugadores.get(1));
 
             manoManager.inicializarMano();
             manoRivalRenderer.inicializarPosiciones();
@@ -210,13 +211,8 @@ public class PantallaPartida implements Screen {
 
             inicioRonda = false;
         }
-        if(mano > 2){
-            inicioRonda=true;
-            partida.nuevaRonda();
-        }
-        partida.update(delta);
-
     }
+
 
     @Override
     public void resize(int width, int height) {

@@ -33,4 +33,12 @@ private Consola() {
 		return num;
 	}
 
+    public static void esperar(int milis) {
+        try {
+            Thread.sleep(milis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt(); // preservar el estado de interrupción
+        }
+    }
+
 }
