@@ -4,7 +4,14 @@ Todos los cambios relevantes de este proyecto se documentarán aquí.
 
 ---
 
-## [0.1.5] - 2025-08-01
+## [0.1.6] - 2025-10-18
+### Added
+- Se optimizó el código
+- Se agregó la logica para cambiar de ronda
+- Se corrigió un bug que no permitia ver los puntos, tanto del rival como del jugador
+- Se corrigió un bug que no permitia ver la ultima carta que tiraba el rival
+
+## [0.1.5] - 2025-09-27
 ### Added
 - Se optimizó el código
 - Se agregó un HUD
