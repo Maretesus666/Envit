@@ -107,7 +107,7 @@ public class Hud {
         com.badlogic.gdx.graphics.g2d.GlyphLayout layout =
                 new com.badlogic.gdx.graphics.g2d.GlyphLayout(font, textoMano);
 
-        float x = (worldWidth - layout.width) / 2f;
+        float x = worldWidth - layout.width -margen;
         float y = worldHeight - margen;
 
         font.draw(batch, textoMano, x, y);
@@ -137,7 +137,7 @@ public class Hud {
                 new com.badlogic.gdx.graphics.g2d.GlyphLayout(font, texto);
 
         float x = worldWidth - layout.width - margen;
-        float y = worldHeight / 2f;
+        float y = margen + 30;
 
         font.draw(batch, texto, x, y);
     }
