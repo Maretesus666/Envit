@@ -13,6 +13,7 @@ sprites/Baraja2.png
 sprites/baraja.png
 sprites/btn_jugar.png
 sprites/casilla.png
-sprites/dorso.PNG
+sprites/dorso.png
+sprites/dorsoM.png
 sprites/marcoCarta.png
-sprites/mazo_sprite.PNG
+sprites/mazo_sprite.png
