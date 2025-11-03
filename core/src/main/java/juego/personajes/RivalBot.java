@@ -2,12 +2,14 @@ package juego.personajes;
 
 import juego.elementos.Carta;
 import juego.elementos.ZonaJuego;
+import juego.pantallas.Partida;
 
 import java.util.Random;
 
 /**
  * Bot provisorio para simular un rival.
  * Tira cartas de forma automática con un delay.
+ * ✅ NUEVO: Puede cantar truco con cierta probabilidad
  *
  * TODO: Reemplazar con sistema online en la versión final.
  */
@@ -20,15 +22,28 @@ public class RivalBot {
     // Estado del bot
     private boolean esperandoTurno = false;
     private float tiempoEspera = 0f;
-    private float DELAY_ENTRE_CARTAS = 2.0f; // 2 segundos entre cada carta
+    private float DELAY_ENTRE_CARTAS = 2.0f;
 
     // Índice de la carta que va a jugar
     private int siguienteCartaIndex = 0;
+
+    // ✅ NUEVO: Referencia a la partida para poder cantar truco
+    private Partida partida = null;
+
+    // ✅ NUEVO: Probabilidad de cantar truco (30%)
+    private float PROBABILIDAD_TRUCO = 0.30f;
 
     public RivalBot(Jugador jugador, ZonaJuego zona) {
         this.jugador = jugador;
         this.zonaJuego = zona;
         this.random = new Random();
+    }
+
+    /**
+     * ✅ NUEVO: Vincular la partida al bot para que pueda cantar truco
+     */
+    public void setPartida(Partida partida) {
+        this.partida = partida;
     }
 
     /**
@@ -43,6 +58,9 @@ public class RivalBot {
 
         // Cuando pasa el tiempo de espera, tira una carta
         if (tiempoEspera >= DELAY_ENTRE_CARTAS) {
+            // ✅ NUEVO: Antes de tirar la carta, considerar si cantar truco
+            considerarCantarTruco();
+
             tirarCarta();
             tiempoEspera = 0f;
             esperandoTurno = false;
@@ -104,6 +122,31 @@ public class RivalBot {
             zonaJuego.agregarCarta(carta);
             System.out.println("Bot jugó (aleatorio): " + carta.getNombre());
         }
+    }
+
+    /**
+     * ✅ NUEVO: El bot considera si cantar truco antes de jugar
+     */
+    private void considerarCantarTruco() {
+        if (partida == null || partida.isTrucoUsado()) {
+            return; // No hay partida vinculada o el truco ya fue usado
+        }
+
+        // El bot tiene 30% de chance de cantar truco
+        if (random.nextFloat() < PROBABILIDAD_TRUCO) {
+            boolean exito = partida.cantarTruco(Partida.TipoJugador.JUGADOR_2);
+            if (exito) {
+                System.out.println("¡El BOT cantó TRUCO!");
+            }
+        }
+    }
+
+    /**
+     * ✅ NUEVO: Cambiar la probabilidad de que el bot cante truco
+     * @param probabilidad Entre 0.0 (0%) y 1.0 (100%)
+     */
+    public void setProbabilidadTruco(float probabilidad) {
+        this.PROBABILIDAD_TRUCO = Math.max(0f, Math.min(1f, probabilidad));
     }
 
     /**

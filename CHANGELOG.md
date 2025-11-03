@@ -3,6 +3,11 @@
 Todos los cambios relevantes de este proyecto se documentarán aquí.  
 
 ---
+## [0.1.7] - 2025-11-03
+### Added
+- Agregado sistema de turnos
+- Implementado boton de truco
+- Juego finalmente jugable con fin de partida
 
 ## [0.1.6] - 2025-10-18
 ### Added

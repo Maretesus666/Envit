@@ -13,7 +13,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 
 import juego.elementos.*;
-import juego.elementos.Hud;  // ✅ NUEVO
+import juego.elementos.Hud;
 import juego.personajes.Jugador;
 import juego.personajes.RivalBot;
 
@@ -43,7 +43,6 @@ public class PantallaPartida implements Screen {
     private ZonaJuego zonaJuegoRival;
     private ZonaJuego zonaJuegoJugador;
 
-    // ✅ NUEVO: HUD para mostrar puntos
     private Hud hud;
     private BitmapFont font;
 
@@ -56,6 +55,17 @@ public class PantallaPartida implements Screen {
     private final float CARTA_ANCHO = WORLD_WIDTH * CARTA_PROPORCION_ANCHO;
     private final float CARTA_ALTO = CARTA_ANCHO * CARTA_RELACION_ASPECTO;
     private int mano;
+
+    // ✅ NUEVO: Control de pantalla de fin de partida
+    private boolean mostrarPantallaFinal = false;
+    private float tiempoEnPantallaFinal = 0f;
+    private final float TIEMPO_PANTALLA_FINAL = 5.0f;
+
+    // ✅ NUEVO: Botón de Truco
+    private com.badlogic.gdx.math.Rectangle btnTrucoRect;
+    private boolean btnTrucoHovered = false;
+    private float animacionTrucoPulso = 0f;
+
     public PantallaPartida(Game game) {
         this.game = game;
         this.crearJugadores();
@@ -64,7 +74,6 @@ public class PantallaPartida implements Screen {
     private void crearJugadores() {
         Jugador jugador = new Jugador("Tú");
         Jugador rival = new Jugador("Rival");
-
 
         jugadores.add(jugador);
         jugadores.add(rival);
@@ -83,7 +92,6 @@ public class PantallaPartida implements Screen {
         shapeRenderer = new ShapeRenderer();
         cartaRenderer = new CartaRenderer(batch, shapeRenderer, viewport);
 
-        // ✅ NUEVO: Inicializar fuente y HUD
         font = new BitmapFont();
         font.getData().setScale(1.2f);
         hud = new Hud(font, jugadores.get(0), jugadores.get(1), WORLD_WIDTH, WORLD_HEIGHT);
@@ -115,6 +123,7 @@ public class PantallaPartida implements Screen {
 
         rivalBot = new RivalBot(jugadores.get(1), zonaJuegoRival);
         rivalBot.setDelay(1.5f);
+        rivalBot.setProbabilidadTruco(0.3f); // ✅ NUEVO: 30% de chance de truco
 
         manoRivalRenderer = new ManoRivalRenderer(
                 jugadores.get(1),
@@ -137,9 +146,22 @@ public class PantallaPartida implements Screen {
         );
 
         partida.inicializar(zonaJuegoJugador, zonaJuegoRival, rivalBot,
-                jugadores.get(0), jugadores.get(1), mano);  // ✅ Pasamos los jugadores
+                jugadores.get(0), jugadores.get(1), mano);
+
+        // ✅ NUEVO: Vincular la partida al bot para que pueda usar truco
+        rivalBot.setPartida(partida);
 
         Gdx.input.setInputProcessor(manoManager.getInputMultiplexer());
+
+        // ✅ NUEVO: Inicializar botón de Truco (lado izquierdo)
+        float btnTrucoAncho = 80f;
+        float btnTrucoAlto = 60f;
+        float margenIzq = 20f;
+        float btnTrucoX = margenIzq;
+        float btnTrucoY = (WORLD_HEIGHT - btnTrucoAlto) / 2f;
+        btnTrucoRect = new com.badlogic.gdx.math.Rectangle(
+                btnTrucoX, btnTrucoY, btnTrucoAncho, btnTrucoAlto
+        );
 
         resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     }
@@ -149,6 +171,12 @@ public class PantallaPartida implements Screen {
         update(delta);
         Gdx.gl.glClearColor(0, 0.1f, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+        // ✅ NUEVO: Si la partida terminó, mostrar pantalla de ganador
+        if (mostrarPantallaFinal) {
+            renderPantallaFinal(delta);
+            return;
+        }
 
         // 1. DIBUJAR FONDO Y MAZO
         this.batch.setProjectionMatrix(viewport.getCamera().combined);
@@ -183,15 +211,43 @@ public class PantallaPartida implements Screen {
         zonaJuegoJugador.renderCartas();
         zonaJuegoRival.renderCartas();
 
+        // ✅ NUEVO: Dibujar botón de Truco
         this.batch.setProjectionMatrix(viewport.getCamera().combined);
-        hud.render(batch, partida.getManoActual(), partida.esTurnoJugador());
+        renderBotonTruco(delta);
+
+        this.batch.setProjectionMatrix(viewport.getCamera().combined);
+        hud.render(batch, partida.getManoActual(), partida.esTurnoJugador(),
+                partida.isTrucoActivoEnManoActual(), partida.getManoTrucoUsada());
     }
 
     public void update(float delta) {
         animacion.update(delta);
         partida.update(delta);
 
-        // Si la partida está lista para nueva ronda
+        // ✅ NUEVO: Actualizar animación del botón de truco
+        animacionTrucoPulso += delta * 3f;
+        if (animacionTrucoPulso > Math.PI * 2) {
+            animacionTrucoPulso = 0f;
+        }
+
+        // ✅ NUEVO: Detectar hover y click en botón de truco
+        if (!mostrarPantallaFinal && !partida.partidaTerminada()) {
+            detectarInputTruco();
+        }
+
+        // ✅ NUEVO: Verificar si la partida terminó
+        if (partida.partidaTerminada() && !mostrarPantallaFinal) {
+            mostrarPantallaFinal = true;
+            tiempoEnPantallaFinal = 0f;
+
+            // Desactivar input del jugador
+            Gdx.input.setInputProcessor(null);
+
+            System.out.println("¡PARTIDA TERMINADA! Ganador: " + partida.getGanador().getNombre());
+            return;
+        }
+
+        // Si la partida está lista para nueva ronda (pero NO terminada)
         if (partida.rondaTerminada()) {
             inicioRonda = true;
             partida.nuevaRonda();
@@ -213,6 +269,197 @@ public class PantallaPartida implements Screen {
         }
     }
 
+    /**
+     * ✅ NUEVO: Renderiza la pantalla de fin de partida
+     */
+    private void renderPantallaFinal(float delta) {
+        tiempoEnPantallaFinal += delta;
+
+        // Fondo oscuro semi-transparente
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+        Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+
+        shapeRenderer.setProjectionMatrix(viewport.getCamera().combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        shapeRenderer.setColor(0, 0, 0, 0.8f);
+        shapeRenderer.rect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
+        shapeRenderer.end();
+
+        Gdx.gl.glDisable(GL20.GL_BLEND);
+
+        // Mostrar mensaje de ganador
+        batch.setProjectionMatrix(viewport.getCamera().combined);
+
+        Jugador ganador = partida.getGanador();
+        boolean ganoJugador = ganador == jugadores.get(0);
+
+        String mensaje = ganoJugador ? "¡VICTORIA!" : "DERROTA";
+        Color colorMensaje = ganoJugador ? new Color(0.2f, 0.9f, 0.2f, 1f) : new Color(0.9f, 0.2f, 0.2f, 1f);
+
+        hud.dibujarMensajeCentral(batch, mensaje, colorMensaje);
+
+        // Mostrar puntuación final
+        batch.begin();
+        font.setColor(Color.WHITE);
+        font.getData().setScale(1.5f);
+
+        String puntuacion = jugadores.get(0).getNombre() + ": " + jugadores.get(0).getPuntos() +
+                " - " + jugadores.get(1).getNombre() + ": " + jugadores.get(1).getPuntos();
+
+        com.badlogic.gdx.graphics.g2d.GlyphLayout layout =
+                new com.badlogic.gdx.graphics.g2d.GlyphLayout(font, puntuacion);
+
+        float x = (WORLD_WIDTH - layout.width) / 2f;
+        float y = WORLD_HEIGHT / 2f - 50f;
+
+        font.draw(batch, puntuacion, x, y);
+
+        // Mensaje de retorno al menú
+        font.getData().setScale(1.0f);
+        String mensajeVolver = "Volviendo al menú en " + (int)(TIEMPO_PANTALLA_FINAL - tiempoEnPantallaFinal + 1) + "...";
+
+        if (tiempoEnPantallaFinal >= TIEMPO_PANTALLA_FINAL) {
+            mensajeVolver = "Presiona cualquier tecla para continuar";
+
+            // Si pasa el tiempo o toca, volver al menú
+            if (Gdx.input.isTouched() || Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.ANY_KEY)) {
+                volverAlMenu();
+            }
+        }
+
+        layout = new com.badlogic.gdx.graphics.g2d.GlyphLayout(font, mensajeVolver);
+        x = (WORLD_WIDTH - layout.width) / 2f;
+        y = 50f;
+
+        font.draw(batch, mensajeVolver, x, y);
+
+        batch.end();
+
+        // Auto-retorno después del tiempo límite
+        if (tiempoEnPantallaFinal >= TIEMPO_PANTALLA_FINAL + 10f) {
+            volverAlMenu();
+        }
+    }
+
+    /**
+     * ✅ NUEVO: Volver al menú principal
+     */
+    private void volverAlMenu() {
+        game.setScreen(new PantallaMenu((juego.Principal) game));
+        dispose();
+    }
+
+    /**
+     * ✅ NUEVO: Renderizar el botón de Truco
+     */
+    private void renderBotonTruco(float delta) {
+        boolean trucoDisponible = !partida.isTrucoUsado();
+
+        // Verificar si el mouse está sobre el botón
+        com.badlogic.gdx.math.Vector2 mouse = viewport.unproject(
+                new com.badlogic.gdx.math.Vector2(Gdx.input.getX(), Gdx.input.getY())
+        );
+        btnTrucoHovered = btnTrucoRect.contains(mouse.x, mouse.y) && trucoDisponible;
+
+        // Calcular color y escala según estado
+        Color colorBtn;
+        float escala = 1.0f;
+
+        if (!trucoDisponible) {
+            // Deshabilitado (gris)
+            colorBtn = new Color(0.3f, 0.3f, 0.3f, 0.5f);
+        } else if (btnTrucoHovered) {
+            // Hover (rojo brillante pulsante)
+            float pulso = (float)Math.sin(animacionTrucoPulso) * 0.1f + 0.9f;
+            colorBtn = new Color(1.0f * pulso, 0.2f, 0.2f, 1f);
+            escala = 1.1f;
+        } else {
+            // Normal (rojo)
+            colorBtn = new Color(0.9f, 0.1f, 0.1f, 0.9f);
+        }
+
+        // Dibujar fondo del botón
+        shapeRenderer.setProjectionMatrix(viewport.getCamera().combined);
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+        Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        shapeRenderer.setColor(colorBtn);
+
+        float offsetX = (btnTrucoRect.width * escala - btnTrucoRect.width) / 2f;
+        float offsetY = (btnTrucoRect.height * escala - btnTrucoRect.height) / 2f;
+
+        shapeRenderer.rect(
+                btnTrucoRect.x - offsetX,
+                btnTrucoRect.y - offsetY,
+                btnTrucoRect.width * escala,
+                btnTrucoRect.height * escala
+        );
+        shapeRenderer.end();
+
+        // Borde del botón
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+        shapeRenderer.setColor(Color.WHITE);
+        shapeRenderer.rect(
+                btnTrucoRect.x - offsetX,
+                btnTrucoRect.y - offsetY,
+                btnTrucoRect.width * escala,
+                btnTrucoRect.height * escala
+        );
+        shapeRenderer.end();
+
+        Gdx.gl.glDisable(GL20.GL_BLEND);
+
+        // Dibujar texto
+        batch.begin();
+        font.setColor(trucoDisponible ? Color.WHITE : new Color(0.5f, 0.5f, 0.5f, 1f));
+        font.getData().setScale(1.8f);
+
+        String textoTruco = "TRUCO";
+        com.badlogic.gdx.graphics.g2d.GlyphLayout layout =
+                new com.badlogic.gdx.graphics.g2d.GlyphLayout(font, textoTruco);
+
+        float textX = btnTrucoRect.x + (btnTrucoRect.width - layout.width) / 2f;
+        float textY = btnTrucoRect.y + (btnTrucoRect.height + layout.height) / 2f;
+
+        font.draw(batch, textoTruco, textX, textY);
+
+        // Si está activo en esta mano, mostrar indicador
+        if (partida.isTrucoActivoEnManoActual()) {
+            font.getData().setScale(0.8f);
+            font.setColor(Color.YELLOW);
+            String textoActivo = "x2";
+            layout = new com.badlogic.gdx.graphics.g2d.GlyphLayout(font, textoActivo);
+            float x2X = btnTrucoRect.x + (btnTrucoRect.width - layout.width) / 2f;
+            float x2Y = btnTrucoRect.y - 5f;
+            font.draw(batch, textoActivo, x2X, x2Y);
+        }
+
+        batch.end();
+    }
+
+    /**
+     * ✅ NUEVO: Detectar input en el botón de truco
+     */
+    private void detectarInputTruco() {
+        if (Gdx.input.justTouched()) {
+            com.badlogic.gdx.math.Vector2 touch = viewport.unproject(
+                    new com.badlogic.gdx.math.Vector2(Gdx.input.getX(), Gdx.input.getY())
+            );
+
+            if (btnTrucoRect.contains(touch.x, touch.y)) {
+                // Intentar cantar truco
+                boolean exito = partida.cantarTruco(Partida.TipoJugador.JUGADOR_1);
+
+                if (exito) {
+                    System.out.println("¡TRUCO cantado por el jugador!");
+                    // TODO: Agregar sonido de truco aquí
+                } else {
+                    System.out.println("El truco ya fue usado en esta ronda");
+                }
+            }
+        }
+    }
 
     @Override
     public void resize(int width, int height) {
@@ -235,6 +482,6 @@ public class PantallaPartida implements Screen {
         if (mazoSprite != null) mazoSprite.dispose();
         if (batch != null) batch.dispose();
         if (shapeRenderer != null) shapeRenderer.dispose();
-        if (font != null) font.dispose();  // ✅ NUEVO
+        if (font != null) font.dispose();
     }
 }
