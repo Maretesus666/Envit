@@ -445,27 +445,15 @@ public class PantallaMenu implements Screen {
         }
         return whitePixel;
     }
-
     @Override
-    public void pause() {
-
-    }
-
+    public void pause() {}
     @Override
-    public void resume() {
-
-    }
-
+    public void resume() {}
     @Override
-    public void hide() {
-
-    }
-
+    public void hide() {}
     @Override
-    public void show() {
-
-    }
-
+    public void show() {}
+    
     @Override
     public void dispose() {
         batch.dispose();
