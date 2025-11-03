@@ -1,6 +1,6 @@
 package juego.pantallas;
 
-import com.badlogic.gdx.Gdx;
+
 import juego.elementos.*;
 import juego.personajes.Jugador;
 import juego.personajes.RivalBot;
@@ -14,13 +14,13 @@ public class Partida {
     private ArrayList<Carta> mazoRevuelto = new ArrayList<>();
     private int indiceMazo = 0;
 
-    // ✅ NUEVO: Enum para identificar jugadores
+
     public enum TipoJugador { JUGADOR_1, JUGADOR_2 }
 
     private enum EstadoTurno { ESPERANDO_JUGADOR_1, ESPERANDO_JUGADOR_2, FINALIZANDO_MANO, PARTIDA_TERMINADA }
     private EstadoTurno estadoActual;
 
-    // ✅ NUEVO: Control de fin de partida
+
     private final int PUNTOS_PARA_GANAR = 15;
     private Jugador ganador = null;
 
@@ -40,11 +40,11 @@ public class Partida {
     private int manoActual = 0;
     private final int MAX_MANOS = 3;
 
-    // ✅ NUEVO: Control de quién es mano
+
     private TipoJugador jugadorMano;  // Quién empieza la ronda
     private Random random = new Random();
 
-    // ✅ NUEVO: Sistema de Truco
+
     private boolean trucoUsado = false;
     private int manoTrucoUsada = -1;  // En qué mano se usó el truco (-1 = no usado)
     private TipoJugador jugadorQueCanto = null;  // Quién cantó truco
@@ -58,10 +58,7 @@ public class Partida {
         Collections.shuffle(mazoRevuelto);
     }
 
-    /**
-     * Inicializar la partida con los jugadores y zonas
-     * @param bot puede ser null si es modo online
-     */
+
     public void inicializar(ZonaJuego zonaJug1, ZonaJuego zonaJug2, RivalBot bot,
                             Jugador jug1, Jugador jug2, int manoActual) {
         this.zonaJugador1 = zonaJug1;
@@ -85,7 +82,6 @@ public class Partida {
         this.cartasJugador2Antes = 0;
         this.manoActual = manoActual;
 
-        // ✅ NUEVO: Resetear truco
         this.trucoUsado = false;
         this.manoTrucoUsada = -1;
         this.jugadorQueCanto = null;
@@ -108,7 +104,7 @@ public class Partida {
         indiceMazo = 0;
         Collections.shuffle(mazoRevuelto);
 
-        // ✅ NUEVO: Alternar quién es mano
+
         jugadorMano = (jugadorMano == TipoJugador.JUGADOR_1)
                 ? TipoJugador.JUGADOR_2
                 : TipoJugador.JUGADOR_1;
@@ -143,9 +139,7 @@ public class Partida {
         }
     }
 
-    /**
-     * Update de la lógica de turnos (llamar cada frame)
-     */
+
     public void update(float delta) {
         if (zonaJugador1 == null || zonaJugador2 == null) {
             return;
@@ -178,11 +172,11 @@ public class Partida {
                     cartasJugador1Antes = cartasJug1Actual;
                     estadoActual = EstadoTurno.ESPERANDO_JUGADOR_2;
 
-                    // ✅ NUEVO: Solo activar el bot si existe
+
                     if (rivalBot != null) {
                         rivalBot.activarTurno();
                     }
-                    // TODO: Cuando sea online, aquí enviarías señal al servidor
+
                 }
                 break;
 
@@ -194,8 +188,7 @@ public class Partida {
                     // Modo bot: esperar a que el bot termine
                     turnoJugador2Completo = !rivalBot.isEsperandoTurno();
                 } else {
-                    // Modo online: verificar directamente las cartas en la zona
-                    // TODO: En online, aquí esperarías respuesta del servidor
+
                     turnoJugador2Completo = zonaJugador2.getCantidadCartas() > cartasJugador2Antes;
                 }
 
@@ -227,9 +220,7 @@ public class Partida {
         }
     }
 
-    /**
-     * Evalúa quién ganó la ronda
-     */
+
     private void evaluarRonda() {
         System.out.println("\n=== EVALUANDO RONDA ===");
         System.out.println("Cartas " + jugador1.getNombre() + " en zona: " + zonaJugador1.getCantidadCartas());
@@ -278,7 +269,7 @@ public class Partida {
                 jugador1.getPuntos() + " - " +
                 jugador2.getPuntos() + " " + jugador2.getNombre());
 
-        // ✅ NUEVO: Verificar si algún jugador llegó a 15 puntos
+
         if (jugador1.getPuntos() >= PUNTOS_PARA_GANAR) {
             ganador = jugador1;
             estadoActual = EstadoTurno.PARTIDA_TERMINADA;
@@ -290,51 +281,37 @@ public class Partida {
         }
     }
 
-    /**
-     * ✅ NUEVO: Método para saber si es el turno del jugador 1 (humano local)
-     */
+
     public boolean esTurnoJugador1() {
         return estadoActual == EstadoTurno.ESPERANDO_JUGADOR_1;
     }
 
-    /**
-     * ✅ MODIFICADO: Mantener compatibilidad con código existente
-     */
+
     public boolean esTurnoJugador() {
         return esTurnoJugador1();
     }
 
-    /**
-     * Método para saber si es el turno del jugador 2
-     */
+
     public boolean esTurnoJugador2() {
         return estadoActual == EstadoTurno.ESPERANDO_JUGADOR_2;
     }
 
-    /**
-     * ✅ MODIFICADO: Mantener compatibilidad
-     */
+
     public boolean esTurnoRival() {
         return esTurnoJugador2();
     }
 
-    /**
-     * Método para saber si la ronda terminó
-     */
+
     public boolean rondaTerminada() {
         return estadoActual == EstadoTurno.FINALIZANDO_MANO && ganador == null;
     }
 
-    /**
-     * ✅ NUEVO: Método para saber si la partida completa terminó
-     */
+
     public boolean partidaTerminada() {
         return estadoActual == EstadoTurno.PARTIDA_TERMINADA;
     }
 
-    /**
-     * ✅ NUEVO: Obtener el ganador de la partida
-     */
+
     public Jugador getGanador() {
         return ganador;
     }
@@ -362,7 +339,7 @@ public class Partida {
         if (zonaJugador1 != null) zonaJugador1.limpiar();
         if (zonaJugador2 != null) zonaJugador2.limpiar();
 
-        // ✅ NUEVO: Resetear truco para la nueva ronda
+
         trucoUsado = false;
         manoTrucoUsada = -1;
         jugadorQueCanto = null;
@@ -373,38 +350,21 @@ public class Partida {
         }
     }
 
-    public int getCartasRestantes() {
-        return mazoRevuelto.size() - indiceMazo;
-    }
+
 
     public int getManoActual() {
         return manoActual;
     }
 
-    /**
-     * ✅ NUEVO: Método para saber quién es mano
-     */
-    public TipoJugador getJugadorMano() {
-        return jugadorMano;
-    }
 
-    /**
-     * ✅ NUEVO: Para cuando sea online y quieras forzar el turno inicial
-     */
-    public void setJugadorMano(TipoJugador jugador) {
-        this.jugadorMano = jugador;
-        estadoActual = (jugador == TipoJugador.JUGADOR_1)
-                ? EstadoTurno.ESPERANDO_JUGADOR_1
-                : EstadoTurno.ESPERANDO_JUGADOR_2;
-    }
 
-    // ===== MÉTODOS DEL SISTEMA DE TRUCO =====
 
-    /**
-     * ✅ NUEVO: Cantar truco (solo se puede usar una vez por ronda)
-     * @param jugador Quién canta el truco
-     * @return true si se pudo cantar, false si ya fue usado
-     */
+
+
+
+    //Metodos de truco
+
+
     public boolean cantarTruco(TipoJugador jugador) {
         if (trucoUsado) {
             System.out.println("El truco ya fue cantado en esta ronda");
@@ -425,30 +385,20 @@ public class Partida {
         return true;
     }
 
-    /**
-     * ✅ NUEVO: Verificar si el truco ya fue usado
-     */
+
     public boolean isTrucoUsado() {
         return trucoUsado;
     }
 
-    /**
-     * ✅ NUEVO: Verificar si el truco está activo en la mano actual
-     */
+
     public boolean isTrucoActivoEnManoActual() {
         return trucoUsado && manoTrucoUsada == manoActual;
     }
 
-    /**
-     * ✅ NUEVO: Obtener quién cantó el truco
-     */
-    public TipoJugador getJugadorQueCanto() {
-        return jugadorQueCanto;
-    }
 
-    /**
-     * ✅ NUEVO: Obtener en qué mano se usó el truco
-     */
+
+
+
     public int getManoTrucoUsada() {
         return manoTrucoUsada;
     }

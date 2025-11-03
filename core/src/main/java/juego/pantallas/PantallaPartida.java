@@ -56,12 +56,12 @@ public class PantallaPartida implements Screen {
     private final float CARTA_ALTO = CARTA_ANCHO * CARTA_RELACION_ASPECTO;
     private int mano;
 
-    // ✅ NUEVO: Control de pantalla de fin de partida
+
     private boolean mostrarPantallaFinal = false;
     private float tiempoEnPantallaFinal = 0f;
     private final float TIEMPO_PANTALLA_FINAL = 5.0f;
 
-    // ✅ NUEVO: Botón de Truco
+
     private com.badlogic.gdx.math.Rectangle btnTrucoRect;
     private boolean btnTrucoHovered = false;
     private float animacionTrucoPulso = 0f;
@@ -123,7 +123,7 @@ public class PantallaPartida implements Screen {
 
         rivalBot = new RivalBot(jugadores.get(1), zonaJuegoRival);
         rivalBot.setDelay(1.5f);
-        rivalBot.setProbabilidadTruco(0.3f); // ✅ NUEVO: 30% de chance de truco
+        rivalBot.setProbabilidadTruco(0.3f);
 
         manoRivalRenderer = new ManoRivalRenderer(
                 jugadores.get(1),
@@ -148,12 +148,12 @@ public class PantallaPartida implements Screen {
         partida.inicializar(zonaJuegoJugador, zonaJuegoRival, rivalBot,
                 jugadores.get(0), jugadores.get(1), mano);
 
-        // ✅ NUEVO: Vincular la partida al bot para que pueda usar truco
+
         rivalBot.setPartida(partida);
 
         Gdx.input.setInputProcessor(manoManager.getInputMultiplexer());
 
-        // ✅ NUEVO: Inicializar botón de Truco (lado izquierdo)
+
         float btnTrucoAncho = 80f;
         float btnTrucoAlto = 60f;
         float margenIzq = 20f;
@@ -211,7 +211,7 @@ public class PantallaPartida implements Screen {
         zonaJuegoJugador.renderCartas();
         zonaJuegoRival.renderCartas();
 
-        // ✅ NUEVO: Dibujar botón de Truco
+
         this.batch.setProjectionMatrix(viewport.getCamera().combined);
         renderBotonTruco(delta);
 
@@ -224,18 +224,16 @@ public class PantallaPartida implements Screen {
         animacion.update(delta);
         partida.update(delta);
 
-        // ✅ NUEVO: Actualizar animación del botón de truco
         animacionTrucoPulso += delta * 3f;
         if (animacionTrucoPulso > Math.PI * 2) {
             animacionTrucoPulso = 0f;
         }
 
-        // ✅ NUEVO: Detectar hover y click en botón de truco
+
         if (!mostrarPantallaFinal && !partida.partidaTerminada()) {
             detectarInputTruco();
         }
 
-        // ✅ NUEVO: Verificar si la partida terminó
         if (partida.partidaTerminada() && !mostrarPantallaFinal) {
             mostrarPantallaFinal = true;
             tiempoEnPantallaFinal = 0f;
@@ -269,9 +267,7 @@ public class PantallaPartida implements Screen {
         }
     }
 
-    /**
-     * ✅ NUEVO: Renderiza la pantalla de fin de partida
-     */
+
     private void renderPantallaFinal(float delta) {
         tiempoEnPantallaFinal += delta;
 
@@ -341,17 +337,13 @@ public class PantallaPartida implements Screen {
         }
     }
 
-    /**
-     * ✅ NUEVO: Volver al menú principal
-     */
+
     private void volverAlMenu() {
         game.setScreen(new PantallaMenu((juego.Principal) game));
         dispose();
     }
 
-    /**
-     * ✅ NUEVO: Renderizar el botón de Truco
-     */
+
     private void renderBotonTruco(float delta) {
         boolean trucoDisponible = !partida.isTrucoUsado();
 
@@ -438,9 +430,7 @@ public class PantallaPartida implements Screen {
         batch.end();
     }
 
-    /**
-     * ✅ NUEVO: Detectar input en el botón de truco
-     */
+
     private void detectarInputTruco() {
         if (Gdx.input.justTouched()) {
             com.badlogic.gdx.math.Vector2 touch = viewport.unproject(
