@@ -25,6 +25,9 @@ public class CartaInput implements InputProcessor {
     private float dragOffsetX;
     private float dragOffsetY;
 
+    // ✅ NUEVO: Control de si el input está habilitado
+    private boolean habilitado = true;
+
     public CartaInput(Carta carta, Viewport viewport, float ancho, float alto) {
         this.cartaParaMover = carta;
         this.viewport = viewport;
@@ -32,14 +35,39 @@ public class CartaInput implements InputProcessor {
         this.cartaAlto = alto;
     }
 
-
     public void setZonaJuego(ZonaJuego zona) {
         this.zonaJuego = zona;
     }
 
+    /**
+     * ✅ NUEVO: Habilitar o deshabilitar el input de esta carta
+     */
+    public void setHabilitado(boolean habilitado) {
+        this.habilitado = habilitado;
+
+        // Si se deshabilita mientras se está arrastrando, cancelar el drag
+        if (!habilitado && isDragging) {
+            isDragging = false;
+            cartaParaMover.updateLimites(
+                    posicionOriginalX,
+                    posicionOriginalY,
+                    cartaAncho,
+                    cartaAlto
+            );
+        }
+    }
+
+    /**
+     * ✅ NUEVO: Verificar si el input está habilitado
+     */
+    public boolean isHabilitado() {
+        return habilitado;
+    }
+
     @Override
     public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-        if (cartaJugada) {
+        // ✅ NUEVO: Si no está habilitado o ya fue jugada, ignorar
+        if (!habilitado || cartaJugada) {
             return false;
         }
 
@@ -64,6 +92,11 @@ public class CartaInput implements InputProcessor {
 
     @Override
     public boolean touchDragged(int screenX, int screenY, int pointer) {
+        // ✅ NUEVO: Verificar que esté habilitado
+        if (!habilitado) {
+            return false;
+        }
+
         if (isDragging) {
             touchPoint.set(screenX, screenY, 0);
             viewport.unproject(touchPoint);
@@ -80,10 +113,15 @@ public class CartaInput implements InputProcessor {
 
     @Override
     public boolean touchUp(int screenX, int screenY, int pointer, int button) {
+        // ✅ NUEVO: Verificar que esté habilitado
+        if (!habilitado) {
+            return false;
+        }
+
         if (isDragging) {
             isDragging = false;
 
-            // ✅ NUEVO: Verificar si la carta fue soltada en la zona de juego
+            // Verificar si la carta fue soltada en la zona de juego
             if (zonaJuego != null && zonaJuego.contieneCarta(cartaParaMover)) {
                 // La carta está en la zona válida
                 zonaJuego.agregarCarta(cartaParaMover);
@@ -91,7 +129,7 @@ public class CartaInput implements InputProcessor {
 
                 System.out.println("Carta jugada: " + cartaParaMover.getNombre());
             } else {
-                // ✅ La carta NO está en la zona → volver a posición original
+                // La carta NO está en la zona → volver a posición original
                 cartaParaMover.updateLimites(
                         posicionOriginalX,
                         posicionOriginalY,
@@ -112,7 +150,7 @@ public class CartaInput implements InputProcessor {
         if (isDragging) {
             isDragging = false;
 
-            // ✅ Si se cancela, devolver a posición original
+            // Si se cancela, devolver a posición original
             cartaParaMover.updateLimites(
                     posicionOriginalX,
                     posicionOriginalY,
@@ -125,7 +163,6 @@ public class CartaInput implements InputProcessor {
         return false;
     }
 
-    // ✅ NUEVO: Getter para saber si la carta fue jugada
     public boolean isCartaJugada() {
         return cartaJugada;
     }

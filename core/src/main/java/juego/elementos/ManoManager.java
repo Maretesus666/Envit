@@ -20,11 +20,11 @@ public class ManoManager {
     private float animatedY;
     private final InputMultiplexer multiplexer;
 
-    // ✅ NUEVO: Lista de inputs (para poder consultar estados)
     private ArrayList<CartaInput> cartaInputs;
-
-    // ✅ NUEVO: Referencia a la zona de juego
     private ZonaJuego zonaJuego;
+
+    // ✅ NUEVO: Control de turnos
+    private boolean esMiTurno = true;
 
     public ManoManager(Jugador jugador, CartaRenderer renderer, Viewport viewport,
                        float worldWidth, float worldHeight, float cartaAncho, float cartaAlto) {
@@ -44,7 +44,6 @@ public class ManoManager {
         this.animatedY = WORLD_HEIGHT * 0.05f;
     }
 
-    // ✅ NUEVO: Método para vincular la zona de juego
     public void setZonaJuego(ZonaJuego zona) {
         this.zonaJuego = zona;
 
@@ -52,6 +51,25 @@ public class ManoManager {
         for (CartaInput input : cartaInputs) {
             input.setZonaJuego(zona);
         }
+    }
+
+    /**
+     * ✅ NUEVO: Habilitar o deshabilitar el input según el turno
+     */
+    public void setEsMiTurno(boolean esMiTurno) {
+        this.esMiTurno = esMiTurno;
+
+        // Actualizar todos los inputs
+        for (CartaInput input : cartaInputs) {
+            input.setHabilitado(esMiTurno);
+        }
+    }
+
+    /**
+     * ✅ NUEVO: Obtener si es mi turno
+     */
+    public boolean isEsMiTurno() {
+        return esMiTurno;
     }
 
     public void setPosicionInicialY(float y) {
@@ -71,7 +89,7 @@ public class ManoManager {
         float startX = (WORLD_WIDTH - anchoTotalMano) / 2f;
         float Y_FINAL = WORLD_HEIGHT * 0.05f;
 
-        // ✅ Limpiar inputs anteriores
+        // Limpiar inputs anteriores
         cartaInputs.clear();
 
         for (int i = 0; i < numCartas; i++) {
@@ -88,12 +106,15 @@ public class ManoManager {
                     CARTA_ALTO
             );
 
-            // ✅ Vincular la zona de juego si existe
+            // Vincular la zona de juego si existe
             if (zonaJuego != null) {
                 input.setZonaJuego(zonaJuego);
             }
 
-            // ✅ Guardar referencia al input
+            // ✅ NUEVO: Setear el estado inicial del turno
+            input.setHabilitado(esMiTurno);
+
+            // Guardar referencia al input
             cartaInputs.add(input);
 
             multiplexer.addProcessor(input);
@@ -118,7 +139,6 @@ public class ManoManager {
         }
     }
 
-    // ✅ NUEVO: Método para saber cuántas cartas se jugaron
     public int getCartasJugadas() {
         int count = 0;
         for (CartaInput input : cartaInputs) {
@@ -129,7 +149,6 @@ public class ManoManager {
         return count;
     }
 
-    // ✅ NUEVO: Método para verificar si todas las cartas fueron jugadas
     public boolean todasLasCartasJugadas() {
         return getCartasJugadas() == jugador.getMano().length;
     }

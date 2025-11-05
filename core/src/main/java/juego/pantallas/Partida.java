@@ -181,11 +181,10 @@ public class Partida {
                 break;
 
             case ESPERANDO_JUGADOR_2:
-                // ✅ MODIFICADO: Verificar si el jugador 2 terminó su turno
                 boolean turnoJugador2Completo = false;
 
                 if (rivalBot != null) {
-                    // Modo bot: esperar a que el bot termine
+
                     turnoJugador2Completo = !rivalBot.isEsperandoTurno();
                 } else {
 
@@ -244,7 +243,6 @@ public class Partida {
             Carta cartaJug1 = cartasJug1.get(i);
             Carta cartaJug2 = cartasJug2.get(i);
 
-            // ✅ NUEVO: Calcular puntos según si hay truco
             int puntosEnJuego = 1;
             if (trucoUsado && manoTrucoUsada == i) {
                 puntosEnJuego = 2;
