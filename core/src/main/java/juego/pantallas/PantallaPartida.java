@@ -267,7 +267,9 @@ public class PantallaPartida implements Screen {
             manoManager.inicializarMano();
             manoRivalRenderer.inicializarPosiciones();
             animacion.iniciarAnimacionReparto();
-
+            if (!partida.esTurnoJugador() && rivalBot != null) {
+                rivalBot.activarTurno();
+            }
             inicioRonda = false;
         }
     }

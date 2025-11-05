@@ -86,46 +86,9 @@ public class Partida {
         this.manoTrucoUsada = -1;
         this.jugadorQueCanto = null;
 
-        // Si empieza el jugador 2 y es un bot, activarlo
-        if (jugadorMano == TipoJugador.JUGADOR_2 && rivalBot != null) {
-            rivalBot.activarTurno();
-        }
     }
 
-    public void finalizarRonda(Jugador jugador1, Jugador jugador2) {
-        jugador1.limpiarMazo();
-        jugador2.limpiarMazo();
 
-        // Limpiar zonas
-        if (zonaJugador1 != null) zonaJugador1.limpiar();
-        if (zonaJugador2 != null) zonaJugador2.limpiar();
-
-        // Revolver de nuevo para la próxima ronda
-        indiceMazo = 0;
-        Collections.shuffle(mazoRevuelto);
-
-
-        jugadorMano = (jugadorMano == TipoJugador.JUGADOR_1)
-                ? TipoJugador.JUGADOR_2
-                : TipoJugador.JUGADOR_1;
-
-        estadoActual = (jugadorMano == TipoJugador.JUGADOR_1)
-                ? EstadoTurno.ESPERANDO_JUGADOR_1
-                : EstadoTurno.ESPERANDO_JUGADOR_2;
-
-        System.out.println("NUEVA RONDA - Empieza: " +
-                (jugadorMano == TipoJugador.JUGADOR_1 ? this.jugador1.getNombre() : this.jugador2.getNombre()));
-
-        cartasJugador1Antes = 0;
-        cartasJugador2Antes = 0;
-        manoActual = 0;
-        repartirCartas(jugador1, jugador2);
-
-        // Si empieza el jugador 2 y es un bot, activarlo
-        if (jugadorMano == TipoJugador.JUGADOR_2 && rivalBot != null) {
-            rivalBot.activarTurno();
-        }
-    }
 
     public void repartirCartas(Jugador jugador1, Jugador jugador2) {
         if (indiceMazo + 6 > mazoRevuelto.size()) {
@@ -197,6 +160,7 @@ public class Partida {
                     if (cartasJug2Actual > cartasJugador2Antes) {
                         System.out.println(jugador2.getNombre() + " tiró una carta. Turno de " + jugador1.getNombre());
                         cartasJugador2Antes = cartasJug2Actual;
+
                         manoActual++;
 
                         if (manoActual >= MAX_MANOS) {
@@ -214,7 +178,6 @@ public class Partida {
                 break;
 
             case PARTIDA_TERMINADA:
-                // No hacer nada, la partida terminó
                 break;
         }
     }
