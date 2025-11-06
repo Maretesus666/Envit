@@ -125,7 +125,6 @@ public class Partida {
             }
         }
 
-        // Gestionar turnos
         switch (estadoActual) {
             case ESPERANDO_JUGADOR_1:
                 int cartasJug1Actual = zonaJugador1.getCantidadCartas();

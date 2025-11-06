@@ -148,11 +148,8 @@ public class BotonTruco {
         batch.end();
     }
 
-    /**
-     * Actualiza el estado de hover del botón
-     */
     private void actualizarHover() {
-        boolean trucoDisponible = !partida.isTrucoUsado();
+        boolean trucoDisponible = !partida.isTrucoUsado() ;
 
         Vector2 mouse = viewport.unproject(
                 new Vector2(Gdx.input.getX(), Gdx.input.getY())
@@ -161,10 +158,7 @@ public class BotonTruco {
         hovered = btnRect.contains(mouse.x, mouse.y) && trucoDisponible;
     }
 
-    /**
-     * Detecta si se hizo click en el botón
-     * @return true si se cantó truco exitosamente
-     */
+
     public boolean detectarClick() {
         if (!Gdx.input.justTouched()) {
             return false;
@@ -181,65 +175,15 @@ public class BotonTruco {
         return false;
     }
 
-    /**
-     * Intenta cantar truco
-     * @return true si se cantó exitosamente
-     */
+
     private boolean intentarCantarTruco() {
         boolean exito = partida.cantarTruco(Partida.TipoJugador.JUGADOR_1);
 
         if (exito) {
             System.out.println("¡TRUCO cantado por el jugador!");
-            // TODO: Agregar sonido de truco aquí
-        } else {
-            System.out.println("El truco ya fue usado en esta ronda");
-        }
 
+        }
         return exito;
     }
 
-    /**
-     * Obtiene el rectángulo del botón para detección de colisiones
-     */
-    public Rectangle getBounds() {
-        return btnRect;
-    }
-
-    /**
-     * Verifica si el botón está habilitado
-     */
-    public boolean isHabilitado() {
-        return !partida.isTrucoUsado();
-    }
-
-    /**
-     * Verifica si el mouse está sobre el botón
-     */
-    public boolean isHovered() {
-        return hovered;
-    }
-
-    // Setters para personalización
-
-    public void setColorNormal(Color color) {
-        this.colorNormal = color;
-    }
-
-    public void setColorHover(Color color) {
-        this.colorHover = color;
-    }
-
-    public void setColorDeshabilitado(Color color) {
-        this.colorDeshabilitado = color;
-    }
-
-    public void setPosicion(float x, float y) {
-        this.btnRect.setPosition(x, y);
-    }
-
-    public void setTamanio(float ancho, float alto) {
-        this.btnRect.setSize(ancho, alto);
-        this.btnAncho = ancho;
-        this.btnAlto = alto;
-    }
 }
