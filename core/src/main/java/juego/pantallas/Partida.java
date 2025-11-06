@@ -27,9 +27,9 @@ public class Partida {
     private ZonaJuego zonaJugador1;  // antes zonaJugador
     private ZonaJuego zonaJugador2;  // antes zonaRival
 
-    private RivalBot rivalBot;  // null cuando sea online
-    private Jugador jugador1;   // El jugador humano local
-    private Jugador jugador2;   // El rival (bot o jugador remoto)
+    private RivalBot rivalBot;
+    private Jugador jugador1;
+    private Jugador jugador2;
 
     private int cartasJugador1Antes = 0;
     private int cartasJugador2Antes = 0;
@@ -133,13 +133,32 @@ public class Partida {
                 if (cartasJug1Actual > cartasJugador1Antes) {
                     System.out.println(jugador1.getNombre() + " tiró una carta. Turno de " + jugador2.getNombre());
                     cartasJugador1Antes = cartasJug1Actual;
-                    estadoActual = EstadoTurno.ESPERANDO_JUGADOR_2;
 
+                    // ✅ NUEVO: Solo incrementar si AMBOS ya jugaron
+                    if (cartasJugador1Antes == cartasJugador2Antes) {
+                        manoActual++;
+                        System.out.println("=== Completada mano " + manoActual + " de " + MAX_MANOS + " ===");
 
-                    if (rivalBot != null) {
-                        rivalBot.activarTurno();
+                        if (manoActual >= MAX_MANOS) {
+                            esperandoFinalizacion = true;
+                            delayFinalizacion = 0;
+                        } else {
+                            // Siguiente mano - determinar quién empieza según jugadorMano
+                            estadoActual = (jugadorMano == TipoJugador.JUGADOR_1)
+                                    ? EstadoTurno.ESPERANDO_JUGADOR_1
+                                    : EstadoTurno.ESPERANDO_JUGADOR_2;
+
+                            if (estadoActual == EstadoTurno.ESPERANDO_JUGADOR_2 && rivalBot != null) {
+                                rivalBot.activarTurno();
+                            }
+                        }
+                    } else {
+                        // El jugador 1 tiró primero, ahora le toca al jugador 2
+                        estadoActual = EstadoTurno.ESPERANDO_JUGADOR_2;
+                        if (rivalBot != null) {
+                            rivalBot.activarTurno();
+                        }
                     }
-
                 }
                 break;
 
@@ -147,10 +166,8 @@ public class Partida {
                 boolean turnoJugador2Completo = false;
 
                 if (rivalBot != null) {
-
                     turnoJugador2Completo = !rivalBot.isEsperandoTurno();
                 } else {
-
                     turnoJugador2Completo = zonaJugador2.getCantidadCartas() > cartasJugador2Antes;
                 }
 
@@ -161,12 +178,26 @@ public class Partida {
                         System.out.println(jugador2.getNombre() + " tiró una carta. Turno de " + jugador1.getNombre());
                         cartasJugador2Antes = cartasJug2Actual;
 
-                        manoActual++;
+                        // ✅ NUEVO: Solo incrementar si AMBOS ya jugaron
+                        if (cartasJugador1Antes == cartasJugador2Antes) {
+                            manoActual++;
+                            System.out.println("=== Completada mano " + manoActual + " de " + MAX_MANOS + " ===");
 
-                        if (manoActual >= MAX_MANOS) {
-                            esperandoFinalizacion = true;
-                            delayFinalizacion = 0;
+                            if (manoActual >= MAX_MANOS) {
+                                esperandoFinalizacion = true;
+                                delayFinalizacion = 0;
+                            } else {
+                                // Siguiente mano - determinar quién empieza según jugadorMano
+                                estadoActual = (jugadorMano == TipoJugador.JUGADOR_1)
+                                        ? EstadoTurno.ESPERANDO_JUGADOR_1
+                                        : EstadoTurno.ESPERANDO_JUGADOR_2;
+
+                                if (estadoActual == EstadoTurno.ESPERANDO_JUGADOR_2 && rivalBot != null) {
+                                    rivalBot.activarTurno();
+                                }
+                            }
                         } else {
+                            // El jugador 2 tiró primero, ahora le toca al jugador 1
                             estadoActual = EstadoTurno.ESPERANDO_JUGADOR_1;
                         }
                     }
@@ -258,9 +289,6 @@ public class Partida {
     }
 
 
-    public boolean esTurnoRival() {
-        return esTurnoJugador2();
-    }
 
 
     public boolean rondaTerminada() {
@@ -277,9 +305,7 @@ public class Partida {
         return ganador;
     }
 
-    /**
-     * Método para iniciar una nueva ronda
-     */
+
     public void nuevaRonda() {
         // ✅ NUEVO: Alternar quién es mano
         jugadorMano = (jugadorMano == TipoJugador.JUGADOR_1)
@@ -355,10 +381,6 @@ public class Partida {
     public boolean isTrucoActivoEnManoActual() {
         return trucoUsado && manoTrucoUsada == manoActual;
     }
-
-
-
-
 
     public int getManoTrucoUsada() {
         return manoTrucoUsada;
