@@ -28,9 +28,40 @@ public class CartaRenderer {
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         shapeRenderer.setColor(backgroundColor);
 
-        shapeRenderer.rect(limites.x, limites.y, limites.width, limites.height);
+        float lx = limites.x;
+        float ly = limites.y;
+        float lw = limites.width;
+        float lh = limites.height;
+
+        // corner en píxeles (radio)
+        int corner = Math.max(2, Math.min(16, (int) Math.round(Math.min(lw, lh) * 0.12f)));
+        float r = corner; // usar float radius = corner para arc
+
+        // Centro (rectángulo central que deja espacio para esquinas)
+        shapeRenderer.rect(lx + r, ly + r, lw - 2f * r, lh - 2f * r);
+
+        // Bordes (rectángulos que no tocan las esquinas)
+        shapeRenderer.rect(lx + r, ly, lw - 2f * r, r); // abajo
+        shapeRenderer.rect(lx + r, ly + lh - r, lw - 2f * r, r); // arriba
+        shapeRenderer.rect(lx, ly + r, r, lh - 2f * r); // izquierda
+        shapeRenderer.rect(lx + lw - r, ly + r, r, lh - 2f * r); // derecha
+
+        // Esquinas: dibujamos cuatro arcs (cuartos de círculo) rellenados.
+        // En libGDX: arc(x,y, radius, startDeg, sweepDeg) donde 0° = +X, aumenta CCW.
+        // bottom-left (desde 180° a 270°)
+        shapeRenderer.arc(lx + r, ly + r, r, 180f, 90f);
+
+        // bottom-right (desde 270° a 360°)
+        shapeRenderer.arc(lx + lw - r, ly + r, r, 270f, 90f);
+
+        // top-left (desde 90° a 180°)
+        shapeRenderer.arc(lx + r, ly + lh - r, r, 90f, 90f);
+
+        // top-right (desde 0° a 90°)
+        shapeRenderer.arc(lx + lw - r, ly + lh - r, r, 0f, 90f);
 
         shapeRenderer.end();
+
         batch.begin();
         carta.draw(batch, x, y, width, height);
         batch.end();
